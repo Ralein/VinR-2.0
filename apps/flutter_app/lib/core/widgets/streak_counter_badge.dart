@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../theme/vinr_colors.dart';
+import '../theme/theme_context.dart';
 import '../theme/vinr_typography.dart';
 
 class StreakCounterBadge extends StatelessWidget {
@@ -15,26 +15,30 @@ class StreakCounterBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final goldCol = context.goldColor;
+    final bgCol = context.goldMutedColor;
+    final borderCol = context.borderGoldColor;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: VinRColors.goldMuted,
+        color: bgCol,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: VinRColors.borderGold),
+        border: Border.all(color: borderCol),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             isWinner ? LucideIcons.trophy : LucideIcons.flame,
-            color: VinRColors.goldLight,
+            color: goldCol,
             size: 18,
           ),
           const SizedBox(width: 6),
           Text(
             '$streakDays/21 DAYS WINNER',
             style: VinRTypography.label.copyWith(
-              color: VinRColors.goldLight,
+              color: goldCol,
               fontWeight: FontWeight.bold,
             ),
           ),
