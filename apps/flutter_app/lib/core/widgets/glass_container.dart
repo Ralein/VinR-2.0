@@ -28,21 +28,37 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    final defaultColor = isLight
+        ? Colors.white.withValues(alpha: 0.95)
+        : VinRColors.surface.withValues(alpha: 0.85);
+
+    final defaultBorder = isLight
+        ? Border.all(color: const Color(0x18000000), width: 1)
+        : Border.all(color: VinRColors.border, width: 1);
+
+    final defaultShadow = isLight
+        ? BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        : BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          );
+
     final container = Container(
       width: width,
       height: height,
       margin: margin,
       decoration: BoxDecoration(
-        color: color ?? VinRColors.surface.withValues(alpha: 0.85),
+        color: color ?? defaultColor,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: border ?? Border.all(color: VinRColors.border, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: border ?? defaultBorder,
+        boxShadow: [defaultShadow],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),

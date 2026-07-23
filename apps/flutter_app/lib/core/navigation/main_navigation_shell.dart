@@ -22,6 +22,12 @@ class MainNavigationShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentIndex = navigationShell.currentIndex;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    final barBg = isLight ? Colors.white : VinRColors.surface;
+    final borderColor = isLight ? const Color(0x1A000000) : VinRColors.border;
+    final activeGold = isLight ? const Color(0xFFB8832A) : VinRColors.goldLight;
+    final inactiveColor = isLight ? const Color(0xFF7A7060) : VinRColors.textGhost;
 
     return Scaffold(
       body: navigationShell,
@@ -30,7 +36,7 @@ class MainNavigationShell extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 8.0),
         child: FloatingActionButton(
           onPressed: () => context.push('/buddy-chat'),
-          backgroundColor: VinRColors.gold,
+          backgroundColor: activeGold,
           elevation: 6,
           shape: const CircleBorder(),
           child: const Icon(LucideIcons.messageCircle, color: Colors.white, size: 24),
@@ -39,13 +45,13 @@ class MainNavigationShell extends StatelessWidget {
       bottomNavigationBar: Container(
         height: 76,
         decoration: BoxDecoration(
-          color: VinRColors.surface,
-          border: const Border(
-            top: BorderSide(color: VinRColors.border, width: 1),
+          color: barBg,
+          border: Border(
+            top: BorderSide(color: borderColor, width: 1),
           ),
           boxShadow: [
             BoxShadow(
-              color: VinRColors.gold.withValues(alpha: 0.08),
+              color: activeGold.withValues(alpha: isLight ? 0.12 : 0.08),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -60,6 +66,8 @@ class MainNavigationShell extends StatelessWidget {
               currentIndex: currentIndex,
               icon: LucideIcons.home,
               label: 'HOME',
+              activeColor: activeGold,
+              inactiveColor: inactiveColor,
               onTap: () => _onItemTapped(0),
             ),
 
@@ -69,6 +77,8 @@ class MainNavigationShell extends StatelessWidget {
               currentIndex: currentIndex,
               icon: LucideIcons.heart,
               label: 'CHECK-IN',
+              activeColor: activeGold,
+              inactiveColor: inactiveColor,
               onTap: () => _onItemTapped(1),
             ),
 
@@ -87,12 +97,12 @@ class MainNavigationShell extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: VinRColors.goldGradient,
                         border: Border.all(
-                          color: currentIndex == 2 ? VinRColors.goldLight : VinRColors.borderGold,
+                          color: currentIndex == 2 ? activeGold : VinRColors.borderGold,
                           width: 2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: VinRColors.gold.withValues(alpha: currentIndex == 2 ? 0.6 : 0.35),
+                            color: activeGold.withValues(alpha: currentIndex == 2 ? 0.6 : 0.35),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -111,7 +121,7 @@ class MainNavigationShell extends StatelessWidget {
                       'GLINT',
                       style: VinRTypography.label.copyWith(
                         fontSize: 9,
-                        color: currentIndex == 2 ? VinRColors.goldLight : VinRColors.textMuted,
+                        color: currentIndex == 2 ? activeGold : inactiveColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -126,6 +136,8 @@ class MainNavigationShell extends StatelessWidget {
               currentIndex: currentIndex,
               icon: LucideIcons.bookOpen,
               label: 'JOURNAL',
+              activeColor: activeGold,
+              inactiveColor: inactiveColor,
               onTap: () => _onItemTapped(3),
             ),
 
@@ -135,6 +147,8 @@ class MainNavigationShell extends StatelessWidget {
               currentIndex: currentIndex,
               icon: LucideIcons.user,
               label: 'PROFILE',
+              activeColor: activeGold,
+              inactiveColor: inactiveColor,
               onTap: () => _onItemTapped(4),
             ),
           ],
@@ -148,6 +162,8 @@ class MainNavigationShell extends StatelessWidget {
     required int currentIndex,
     required IconData icon,
     required String label,
+    required Color activeColor,
+    required Color inactiveColor,
     required VoidCallback onTap,
   }) {
     final isSelected = index == currentIndex;
@@ -161,14 +177,14 @@ class MainNavigationShell extends StatelessWidget {
           Icon(
             icon,
             size: 22,
-            color: isSelected ? VinRColors.goldLight : VinRColors.textGhost,
+            color: isSelected ? activeColor : inactiveColor,
           ),
           const SizedBox(height: 4),
           Text(
             label,
             style: VinRTypography.label.copyWith(
               fontSize: 9,
-              color: isSelected ? VinRColors.goldLight : VinRColors.textGhost,
+              color: isSelected ? activeColor : inactiveColor,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -178,11 +194,11 @@ class MainNavigationShell extends StatelessWidget {
               width: 16,
               height: 3,
               decoration: BoxDecoration(
-                color: VinRColors.gold,
+                color: activeColor,
                 borderRadius: BorderRadius.circular(2),
                 boxShadow: [
                   BoxShadow(
-                    color: VinRColors.gold.withValues(alpha: 0.8),
+                    color: activeColor.withValues(alpha: 0.8),
                     blurRadius: 4,
                   ),
                 ],

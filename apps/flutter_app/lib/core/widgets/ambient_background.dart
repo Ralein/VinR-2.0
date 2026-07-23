@@ -11,13 +11,17 @@ class AmbientBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    final bgColor = isLight ? const Color(0xFFF5F2EC) : VinRColors.voidBg;
+    final goldColor = isLight ? const Color(0xFFB8832A) : VinRColors.gold;
+    final emeraldColor = isLight ? const Color(0xFF2EA87E) : VinRColors.emerald;
+
     return Stack(
       children: [
-        // Base Void Background
+        // Base Void/Parchment Background
         Container(
-          decoration: const BoxDecoration(
-            color: VinRColors.voidBg,
-          ),
+          color: bgColor,
         ),
         // Top Right Gold Radial Glow Blob
         Positioned(
@@ -30,8 +34,8 @@ class AmbientBackground extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  VinRColors.gold.withValues(alpha: 0.12),
-                  VinRColors.gold.withValues(alpha: 0.0),
+                  goldColor.withValues(alpha: isLight ? 0.08 : 0.12),
+                  goldColor.withValues(alpha: 0.0),
                 ],
               ),
             ),
@@ -48,8 +52,8 @@ class AmbientBackground extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  VinRColors.emerald.withValues(alpha: 0.08),
-                  VinRColors.emerald.withValues(alpha: 0.0),
+                  emeraldColor.withValues(alpha: isLight ? 0.06 : 0.08),
+                  emeraldColor.withValues(alpha: 0.0),
                 ],
               ),
             ),
