@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "VinR",
+    "slug": "vinr",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "vinr",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#07090F"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vinr.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#07090F",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.vinr.app",
+      "predictiveBackGestureEnabled": false,
+      "usesCleartextTraffic": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow VinR to access your microphone for voice check-ins."
+        }
+      ],
+      "expo-video",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#D4A853"
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

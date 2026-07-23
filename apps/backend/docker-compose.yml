@@ -1,0 +1,87 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: vinr
+      POSTGRES_PASSWORD: vinr_secret
+      POSTGRES_DB: vinr_db
+    volumes:
+      - vinr_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U vinr -d vinr_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - vinr_redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build: .
+    command: celery -A app.worker.celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    restart: unless-stopped
+
+  beat:
+    build: .
+    command: celery -A app.worker.celery_app beat --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    restart: unless-stopped
+
+  flower:
+    build: .
+    command: celery -A app.worker.celery_app flower --port=5555
+    ports:
+      - "5555:5555"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - worker
+    restart: unless-stopped
+
+volumes:
+  vinr_postgres_data:
+  vinr_redis_data:
