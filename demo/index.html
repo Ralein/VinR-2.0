@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VinR — Wellness Rituals Demo (v2)</title>
+    <!-- Fonts matching mobile -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="device-frame">
+        <div class="screen-container" id="app-root">
+            <!-- Screen content injected here -->
+        </div>
+        
+        <!-- Bottom Tab Navigation (Global) -->
+        <nav class="bottom-nav" id="global-nav" style="display: none;">
+            <a href="#" class="nav-item active" data-tab="home">
+                <i data-lucide="home"></i>
+                <span>HOME</span>
+            </a>
+            <a href="#" class="nav-item" data-tab="checkin">
+                <i data-lucide="heart"></i>
+                <span>CHECK-IN</span>
+            </a>
+            <div class="nav-fab-wrap">
+                <a href="#" class="nav-fab" data-tab="glint">
+                    <div class="nav-fab-glow"></div>
+                    <i data-lucide="play-square"></i>
+                </a>
+                <span class="nav-fab-label">GLINT</span>
+            </div>
+            <a href="#" class="nav-item" data-tab="journey">
+                <i data-lucide="book-open"></i>
+                <span>JOURNAL</span>
+            </a>
+            <a href="#" class="nav-item" data-tab="profile">
+                <i data-lucide="user"></i>
+                <span>PROFILE</span>
+            </a>
+        </nav>
+
+        <!-- Global Chat FAB -->
+        <a href="#" id="global-chat-fab" class="global-chat-fab" onclick="window.navigateTo('chat')">
+            <i data-lucide="message-circle"></i>
+        </a>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
