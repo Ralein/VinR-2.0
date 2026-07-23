@@ -36,13 +36,31 @@ class MainNavigationShell extends StatelessWidget {
       body: navigationShell,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: bottomInset > 0 ? bottomInset + 8 : 16.0),
-        child: FloatingActionButton(
-          onPressed: () => context.push('/buddy-chat'),
-          backgroundColor: activeGold,
-          elevation: 6,
-          shape: const CircleBorder(),
-          child: const Icon(LucideIcons.messageCircle, color: Colors.white, size: 24),
+        padding: const EdgeInsets.only(bottom: 2.0, right: 4.0),
+        child: GestureDetector(
+          onTap: () => context.push('/buddy-chat'),
+          child: Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: VinRColors.goldGradient,
+              boxShadow: [
+                BoxShadow(
+                  color: activeGold.withValues(alpha: 0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(
+                LucideIcons.messageCircle,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+          ),
         ),
       ),
       bottomNavigationBar: Container(
