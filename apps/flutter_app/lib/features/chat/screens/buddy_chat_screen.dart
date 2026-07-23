@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,14 +19,25 @@ class BuddyChatScreen extends ConsumerStatefulWidget {
   ConsumerState<BuddyChatScreen> createState() => _BuddyChatScreenState();
 }
 
-class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
+class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTickerProviderStateMixin {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
 
+  // Voice recording gesture states (Instagram Style Pointer Listener)
   bool _isRecording = false;
+  bool _isLocked = false;
   int _recordingSeconds = 0;
+  Timer? _recordingTimer;
+  Offset? _touchStartPosition;
+  double _dragX = 0;
+  double _dragY = 0;
+
   bool _voiceModeEnabled = false;
   ChatMessageModel? _replyingTo;
+  String? _currentlyPlayingAudioId;
+
+  late AnimationController _pulseController;
+  late Animation<double> _pulseScale;
 
   final List<Map<String, dynamic>> _personas = [
     {'id': 'vinr', 'name': 'VinR Coach', 'icon': LucideIcons.sparkles, 'tag': 'Growth'},
@@ -41,10 +53,77 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+    _pulseScale = Tween<double>(begin: 1.0, end: 1.25).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _recordingTimer?.cancel();
+    _pulseController.dispose();
     super.dispose();
+  }
+
+  void _startRecordingGesture() {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _isRecording = true;
+      _isLocked = false;
+      _recordingSeconds = 0;
+      _dragX = 0;
+      _dragY = 0;
+    });
+
+    _recordingTimer?.cancel();
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() => _recordingSeconds++);
+      }
+    });
+  }
+
+  void _cancelRecordingGesture() {
+    HapticFeedback.lightImpact();
+    _recordingTimer?.cancel();
+    setState(() {
+      _isRecording = false;
+      _isLocked = false;
+      _recordingSeconds = 0;
+      _dragX = 0;
+      _dragY = 0;
+      _touchStartPosition = null;
+    });
+  }
+
+  void _stopAndSendRecording() {
+    HapticFeedback.heavyImpact();
+    _recordingTimer?.cancel();
+
+    final sec = _recordingSeconds > 0 ? _recordingSeconds : 1;
+    ref.read(chatProvider.notifier).sendMessage(
+      'Voice reflection (${sec}s)',
+      isVoice: true,
+    );
+
+    setState(() {
+      _isRecording = false;
+      _isLocked = false;
+      _recordingSeconds = 0;
+      _dragX = 0;
+      _dragY = 0;
+      _touchStartPosition = null;
+    });
+
+    _scrollToBottom();
   }
 
   void _send([String? textOverride]) {
@@ -67,6 +146,12 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
         );
       }
     });
+  }
+
+  String _formatTime(int seconds) {
+    final mins = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '$mins:${secs.toString().padLeft(2, '0')}';
   }
 
   void _showMoreMenu(BuildContext context) {
@@ -209,6 +294,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
     return Scaffold(
       body: AmbientBackground(
         child: SafeArea(
+          bottom: false, // Prevent double bottomInset padding so input bar brings down cleanly
           child: Column(
             children: [
               // Top Header Bar — Matching React Native SafeBlurView
@@ -258,7 +344,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                 ),
               ),
 
-              // Persona Carousel Switcher Bar
+              // Persona Switcher Bar
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -316,6 +402,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
 
                     final aiBubbleBg = isLight ? Colors.white : VinRColors.surface;
                     final userBubbleBg = isLight ? const Color(0xFF2C6DB3) : VinRColors.sapphire;
+                    final isPlayingThis = _currentlyPlayingAudioId == msg.id;
 
                     return GestureDetector(
                       onLongPress: () => _showMessageOptions(msg),
@@ -364,6 +451,55 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                                         height: 1.45,
                                       ),
                                     ),
+
+                                    // Voice Playback Pill (React Native parity)
+                                    if (msg.isVoice) ...[
+                                      const SizedBox(height: 8),
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            if (isPlayingThis) {
+                                              _currentlyPlayingAudioId = null;
+                                            } else {
+                                              _currentlyPlayingAudioId = msg.id;
+                                            }
+                                          });
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: isAi ? activeGold.withValues(alpha: 0.12) : Colors.white.withValues(alpha: 0.18),
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Container(
+                                                width: 26,
+                                                height: 26,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: isAi ? activeGold : Colors.white,
+                                                ),
+                                                child: Center(
+                                                  child: Icon(
+                                                    isPlayingThis ? LucideIcons.pause : LucideIcons.play,
+                                                    size: 13,
+                                                    color: isAi ? Colors.white : userBubbleBg,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              AudioWaveformVisualizer(
+                                                isPlaying: isPlayingThis,
+                                                barColor: isAi ? primaryTextColor : Colors.white,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+
                                     const SizedBox(height: 6),
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -375,9 +511,9 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                                             fontSize: 10,
                                           ),
                                         ),
-                                        if (msg.isVoice) ...[
-                                          const SizedBox(width: 6),
-                                          Icon(LucideIcons.volume2, size: 12, color: isAi ? activeGold : Colors.white),
+                                        if (!isAi) ...[
+                                          const SizedBox(width: 4),
+                                          const Icon(LucideIcons.checkCheck, size: 12, color: Colors.white70),
                                         ],
                                       ],
                                     ),
@@ -407,7 +543,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                 ),
               ],
 
-              // Quick Starter Prompts Chips Bar
+              // Quick Starter Prompts Chips
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -453,45 +589,144 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                 ),
               ],
 
-              // Bottom Voice Recording Bar or Text Input Field
+              // Instagram-Style Hold-to-Record & Swipe-to-Cancel / Slide-to-Lock Bar
               if (_isRecording) ...[
                 Container(
-                  padding: EdgeInsets.only(left: 16, right: 16, top: 12, bottom: bottomInset > 0 ? bottomInset + 8 : 16),
+                  padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: bottomInset > 0 ? bottomInset + 4 : 10),
                   color: context.surfaceColor,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Trash Cancel Button
+                      IconButton(
+                        icon: const Icon(LucideIcons.trash2, color: VinRColors.crimson, size: 22),
+                        onPressed: _cancelRecordingGesture,
+                        tooltip: 'Cancel recording',
+                      ),
+
+                      // Timer & Pulsing Dot
                       Row(
                         children: [
-                          const Icon(LucideIcons.mic, color: VinRColors.crimson, size: 20),
+                          ScaleTransition(
+                            scale: _pulseScale,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: VinRColors.crimson,
+                              ),
+                            ),
+                          ),
                           const SizedBox(width: 8),
-                          Text('Recording (${_recordingSeconds}s)...', style: const TextStyle(color: VinRColors.crimson, fontWeight: FontWeight.bold)),
+                          Text(
+                            _formatTime(_recordingSeconds),
+                            style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
                         ],
                       ),
-                      const AudioWaveformVisualizer(isPlaying: true, barColor: VinRColors.crimson),
-                      IconButton(
-                        icon: Icon(LucideIcons.send, color: activeGold),
-                        onPressed: () {
-                          setState(() => _isRecording = false);
-                          ref.read(chatProvider.notifier).sendMessage('Voice audio reflection recorded', isVoice: true);
-                          _scrollToBottom();
-                        },
+
+                      // Hint Text ("Swipe up to lock ↑" or "Hands-free locked")
+                      Expanded(
+                        child: Text(
+                          _isLocked
+                              ? 'Hands-free locked 🔒'
+                              : (_dragY < -25 ? 'Release to lock 🔒' : 'Swipe up to lock ↑'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: (_isLocked || _dragY < -25) ? activeGold : mutedTextColor,
+                            fontSize: 12,
+                            fontWeight: (_isLocked || _dragY < -25) ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+
+                      // Send Button
+                      GestureDetector(
+                        onTap: _stopAndSendRecording,
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: VinRColors.goldGradient,
+                            boxShadow: [
+                              BoxShadow(
+                                color: activeGold.withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              LucideIcons.send,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ] else ...[
                 Padding(
-                  padding: EdgeInsets.only(left: 16, right: 16, top: 6, bottom: bottomInset > 0 ? bottomInset + 8 : 16),
+                  padding: EdgeInsets.only(left: 12, right: 12, top: 4, bottom: bottomInset > 0 ? bottomInset + 4 : 10),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      IconButton(
-                        icon: Icon(LucideIcons.mic, color: activeGold),
-                        onPressed: () => setState(() {
-                          _isRecording = true;
-                          _recordingSeconds = 0;
-                        }),
+                      // Raw Pointer Listener for Fail-Proof Hold to Record & Swipe Left to Cancel
+                      Listener(
+                        onPointerDown: (event) {
+                          _touchStartPosition = event.position;
+                          _startRecordingGesture();
+                        },
+                        onPointerMove: (event) {
+                          if (_touchStartPosition != null && _isRecording && !_isLocked) {
+                            final dx = event.position.dx - _touchStartPosition!.dx;
+                            final dy = event.position.dy - _touchStartPosition!.dy;
+                            setState(() {
+                              _dragX = dx;
+                              _dragY = dy;
+                            });
+
+                            if (dx < -30) {
+                              _cancelRecordingGesture();
+                            } else if (dy < -40 || _dragY < -40) {
+                              HapticFeedback.heavyImpact();
+                              setState(() {
+                                _isLocked = true;
+                                _dragX = 0;
+                                _dragY = 0;
+                              });
+                            }
+                          }
+                        },
+                        onPointerUp: (event) {
+                          if (_touchStartPosition != null) {
+                            _touchStartPosition = null;
+                            if (!_isLocked) {
+                              if (_dragX < -30) {
+                                _cancelRecordingGesture();
+                              } else {
+                                _stopAndSendRecording();
+                              }
+                            }
+                          }
+                        },
+                        onPointerCancel: (_) {
+                          if (_touchStartPosition != null) {
+                            _touchStartPosition = null;
+                            _cancelRecordingGesture();
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          child: Icon(LucideIcons.mic, color: activeGold, size: 22),
+                        ),
                       ),
+                      const SizedBox(width: 2),
                       Expanded(
                         child: TextField(
                           controller: _messageController,
@@ -501,19 +736,38 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                             hintStyle: TextStyle(color: mutedTextColor),
                             fillColor: context.surfaceColor,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide(color: context.borderColor)),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide(color: context.borderColor),
+                            ),
                           ),
                           onSubmitted: (_) => _send(),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      IconButton.filled(
-                        onPressed: () => _send(),
-                        icon: const Icon(LucideIcons.send, color: Colors.black, size: 18),
-                        style: IconButton.styleFrom(
-                          backgroundColor: activeGold,
-                          shape: const CircleBorder(),
-                          padding: const EdgeInsets.all(12),
+                      GestureDetector(
+                        onTap: () => _send(),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: VinRColors.goldGradient,
+                            boxShadow: [
+                              BoxShadow(
+                                color: activeGold.withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              LucideIcons.send,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
                         ),
                       ),
                     ],
