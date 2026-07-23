@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
 import '../../../core/widgets/ambient_background.dart';
@@ -84,6 +85,10 @@ class _ImmediateReliefScreenState extends State<ImmediateReliefScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final primaryTextColor = context.textColor;
+    final mutedTextColor = context.textMutedColor;
+    final activeGold = context.goldColor;
+
     if (_activeGuideItems != null) {
       final isLast = _activeGuideStep! == _activeGuideItems!.length - 1;
       return Scaffold(
@@ -97,18 +102,18 @@ class _ImmediateReliefScreenState extends State<ImmediateReliefScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        icon: const Icon(LucideIcons.x, color: VinRColors.textPrimary),
+                        icon: Icon(LucideIcons.x, color: primaryTextColor),
                         onPressed: () => setState(() => _activeGuideItems = null),
                       ),
-                      Text(_activeGuideTitle!, style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold)),
-                      Text('${_activeGuideStep! + 1}/${_activeGuideItems!.length}', style: VinRTypography.label),
+                      Text(_activeGuideTitle!, style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor)),
+                      Text('${_activeGuideStep! + 1}/${_activeGuideItems!.length}', style: VinRTypography.label.copyWith(color: activeGold)),
                     ],
                   ),
                   const SizedBox(height: 16),
                   LinearProgressIndicator(
                     value: (_activeGuideStep! + 1) / _activeGuideItems!.length.toDouble(),
-                    backgroundColor: VinRColors.surface,
-                    valueColor: const AlwaysStoppedAnimation<Color>(VinRColors.gold),
+                    backgroundColor: context.borderColor,
+                    valueColor: AlwaysStoppedAnimation<Color>(activeGold),
                   ),
                   const Spacer(),
                   GlassContainer(
@@ -116,7 +121,7 @@ class _ImmediateReliefScreenState extends State<ImmediateReliefScreen> {
                     child: Text(
                       _activeGuideItems![_activeGuideStep!],
                       textAlign: TextAlign.center,
-                      style: VinRTypography.h3.copyWith(height: 1.4),
+                      style: VinRTypography.h3.copyWith(height: 1.4, color: primaryTextColor),
                     ),
                   ),
                   const Spacer(),
@@ -126,7 +131,7 @@ class _ImmediateReliefScreenState extends State<ImmediateReliefScreen> {
                       if (_activeGuideStep! > 0)
                         OutlinedButton(
                           onPressed: () => setState(() => _activeGuideStep = _activeGuideStep! - 1),
-                          child: const Text('Back'),
+                          child: Text('Back', style: TextStyle(color: primaryTextColor)),
                         )
                       else
                         const SizedBox(),
@@ -139,10 +144,10 @@ class _ImmediateReliefScreenState extends State<ImmediateReliefScreen> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: VinRColors.gold,
-                          foregroundColor: Colors.black,
+                          backgroundColor: activeGold,
+                          foregroundColor: Colors.white,
                         ),
-                        child: Text(isLast ? 'Done' : 'Next Step'),
+                        child: Text(isLast ? 'Done' : 'Next Step', style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -169,18 +174,18 @@ class _ImmediateReliefScreenState extends State<ImmediateReliefScreen> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: VinRColors.goldMuted,
-                          border: Border.all(color: VinRColors.borderGold),
+                          color: context.goldMutedColor,
+                          border: Border.all(color: context.borderGoldColor),
                         ),
-                        child: const Icon(LucideIcons.zap, color: VinRColors.goldLight, size: 28),
+                        child: Icon(LucideIcons.zap, color: activeGold, size: 28),
                       ),
                       const SizedBox(height: 12),
-                      Text('Immediate Relief', style: VinRTypography.h1.copyWith(fontSize: 28)),
+                      Text('Immediate Relief', style: VinRTypography.h1.copyWith(fontSize: 26, color: primaryTextColor)),
                       const SizedBox(height: 6),
                       Text(
                         'Evidence-based techniques to help you feel better right now.',
                         textAlign: TextAlign.center,
-                        style: VinRTypography.bodySm.copyWith(color: VinRColors.textMuted),
+                        style: VinRTypography.bodySm.copyWith(color: mutedTextColor),
                       ),
                     ],
                   ),
@@ -191,7 +196,6 @@ class _ImmediateReliefScreenState extends State<ImmediateReliefScreen> {
                 const SectionHeader(
                   title: 'CHOOSE A TECHNIQUE',
                   icon: LucideIcons.sparkles,
-                  iconColor: VinRColors.goldLight,
                 ),
                 ..._techniques.map((tech) {
                   final color = tech['color'] as Color;
@@ -227,15 +231,15 @@ class _ImmediateReliefScreenState extends State<ImmediateReliefScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(tech['name'] as String, style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold)),
+                                Text(tech['name'] as String, style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor)),
                                 const SizedBox(height: 2),
-                                Text(tech['desc'] as String, style: VinRTypography.caption, maxLines: 1),
+                                Text(tech['desc'] as String, style: VinRTypography.caption.copyWith(color: mutedTextColor), maxLines: 1),
                                 const SizedBox(height: 6),
                                 Row(
                                   children: [
-                                    const Icon(LucideIcons.clock, color: VinRColors.textMuted, size: 11),
+                                    Icon(LucideIcons.clock, color: mutedTextColor, size: 11),
                                     const SizedBox(width: 4),
-                                    Text(tech['duration'] as String, style: VinRTypography.caption.copyWith(fontSize: 11)),
+                                    Text(tech['duration'] as String, style: VinRTypography.caption.copyWith(fontSize: 11, color: mutedTextColor)),
                                     const SizedBox(width: 12),
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

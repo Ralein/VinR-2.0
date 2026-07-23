@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
+import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/gold_button.dart';
 
@@ -52,26 +54,31 @@ class _GroundingExerciseScreenState extends State<GroundingExerciseScreen> {
   @override
   Widget build(BuildContext context) {
     final stepInfo = _steps[_currentStep]!;
+    final primaryTextColor = context.textColor;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('5-4-3-2-1 Grounding', style: VinRTypography.h3),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => context.pop(),
-        ),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(gradient: VinRColors.voidGradient),
+      body: AmbientBackground(
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Column(
               children: [
+                // Top Header Row
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, color: primaryTextColor, size: 20),
+                      onPressed: () => context.pop(),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('5-4-3-2-1 Grounding', style: VinRTypography.h3.copyWith(color: primaryTextColor)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
                 LinearProgressIndicator(
                   value: (6 - _currentStep) / 5.0,
-                  backgroundColor: VinRColors.surface,
+                  backgroundColor: context.borderColor,
                   valueColor: AlwaysStoppedAnimation<Color>(stepInfo['color'] as Color),
                 ),
                 const Spacer(),
@@ -82,17 +89,21 @@ class _GroundingExerciseScreenState extends State<GroundingExerciseScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: stepInfo['color'] as Color, width: 2),
                   ),
-                  child: Icon(stepInfo['icon'] as IconData, color: stepInfo['color'] as Color, size: 64),
+                  child: Icon(stepInfo['icon'] as IconData, color: stepInfo['color'] as Color, size: 56),
                 ),
-                const SizedBox(height: 32),
-                Text(stepInfo['title'] as String, style: VinRTypography.h2, textAlign: TextAlign.center),
+                const SizedBox(height: 24),
+                Text(
+                  stepInfo['title'] as String,
+                  style: VinRTypography.h2.copyWith(color: primaryTextColor),
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 16),
                 GlassContainer(
                   padding: const EdgeInsets.all(20),
                   child: Text(
                     stepInfo['desc'] as String,
                     textAlign: TextAlign.center,
-                    style: VinRTypography.body,
+                    style: VinRTypography.body.copyWith(color: primaryTextColor, height: 1.45),
                   ),
                 ),
                 const Spacer(),
@@ -106,6 +117,7 @@ class _GroundingExerciseScreenState extends State<GroundingExerciseScreen> {
                     }
                   },
                 ),
+                const SizedBox(height: 16),
               ],
             ),
           ),

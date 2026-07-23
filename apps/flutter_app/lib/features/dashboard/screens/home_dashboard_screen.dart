@@ -148,7 +148,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                 // Dynamic One-Tap Check-In Nudge Card
                 if (!streak.isCompletedToday) ...[
                   GoldButton(
-                    text: 'Record Today\'s Check-in (+1 Day) →',
+                    text: 'Record Today\'s Check-in →',
                     onPressed: () {
                       streakNotifier.checkInToday();
                       VinRToast.show(
