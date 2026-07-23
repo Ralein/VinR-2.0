@@ -29,7 +29,9 @@ class ProfileScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Profile & Trophy Room', style: VinRTypography.h1.copyWith(fontSize: 24)),
+                  Expanded(
+                    child: Text('Profile & Trophy Room', style: VinRTypography.h1.copyWith(fontSize: 24)),
+                  ),
                   IconButton(
                     icon: const Icon(LucideIcons.settings, color: VinRColors.textMuted),
                     onPressed: () => context.push('/settings'),
