@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
 import '../../../core/widgets/glass_container.dart';
+import '../../../core/widgets/vinr_toast.dart';
 import '../models/therapist_model.dart';
 
 class TherapistDirectoryScreen extends StatelessWidget {
@@ -96,8 +97,11 @@ class TherapistDirectoryScreen extends StatelessWidget {
                           Text('\$${therapist.hourlyRate.toInt()}/session', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: VinRColors.goldLight)),
                           ElevatedButton(
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Slot requested with ${therapist.name}')),
+                              VinRToast.show(
+                                context,
+                                message: 'Session slot requested with ${therapist.name}',
+                                icon: LucideIcons.calendarCheck,
+                                iconColor: VinRColors.emerald,
                               );
                             },
                             style: ElevatedButton.styleFrom(

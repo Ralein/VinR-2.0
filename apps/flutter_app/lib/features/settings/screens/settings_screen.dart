@@ -9,6 +9,7 @@ import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/section_header.dart';
+import '../../../core/widgets/vinr_toast.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../onboarding/providers/onboarding_provider.dart';
 import '../providers/reminder_provider.dart';
@@ -93,8 +94,11 @@ class SettingsScreen extends ConsumerWidget {
                 ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Preferences Updated Successfully! ✨')),
+                    VinRToast.show(
+                      context,
+                      message: 'Preferences Updated Successfully',
+                      icon: LucideIcons.checkCircle2,
+                      iconColor: activeGold,
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -257,8 +261,11 @@ class SettingsScreen extends ConsumerWidget {
                           value: reminderState.isEnabled,
                           onChanged: (val) {
                             reminderNotifier.toggleReminder(val);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(val ? 'Daily streak reminder activated! 🔔' : 'Reminders paused 🔕')),
+                            VinRToast.show(
+                              context,
+                              message: val ? 'Daily streak reminder activated' : 'Reminders paused',
+                              icon: val ? LucideIcons.bell : LucideIcons.bellOff,
+                              iconColor: val ? VinRColors.emerald : context.textMutedColor,
                             );
                           },
                           activeThumbColor: context.goldColor,

@@ -8,6 +8,7 @@ import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/gold_button.dart';
 import '../../../core/widgets/audio_waveform_visualizer.dart';
+import '../../../core/widgets/vinr_toast.dart';
 
 class JournalScreen extends StatefulWidget {
   const JournalScreen({super.key});
@@ -69,8 +70,11 @@ class _JournalScreenState extends State<JournalScreen> {
       _viewMode = 'entries';
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Gratitude Journal Entry Saved! 🎉')),
+    VinRToast.show(
+      context,
+      message: 'Gratitude Journal Entry Saved!',
+      icon: LucideIcons.checkCircle2,
+      iconColor: VinRColors.gold,
     );
   }
 
@@ -78,8 +82,11 @@ class _JournalScreenState extends State<JournalScreen> {
     setState(() {
       _savedEntries.remove(entry);
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Gratitude entry deleted.')),
+    VinRToast.show(
+      context,
+      message: 'Gratitude entry deleted',
+      icon: LucideIcons.trash2,
+      iconColor: VinRColors.crimson,
     );
   }
 
