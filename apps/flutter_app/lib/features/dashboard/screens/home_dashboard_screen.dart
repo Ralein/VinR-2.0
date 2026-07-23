@@ -116,11 +116,14 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                         ),
                         Column(
                           children: [
-                            AvatarRing(
-                              initials: auth.user?.name != null && auth.user!.name!.isNotEmpty
-                                  ? auth.user!.name!.substring(0, 1).toUpperCase()
-                                  : 'VR',
-                              size: 48,
+                            GestureDetector(
+                              onTap: () => context.go('/profile'),
+                              child: AvatarRing(
+                                initials: auth.user?.name != null && auth.user!.name!.isNotEmpty
+                                    ? auth.user!.name!.substring(0, 1).toUpperCase()
+                                    : 'VR',
+                                size: 48,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             IconButton(
