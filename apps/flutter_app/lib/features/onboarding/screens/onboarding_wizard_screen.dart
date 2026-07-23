@@ -239,7 +239,7 @@ class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardScreen>
                   Switch(
                     value: state.notificationsEnabled,
                     onChanged: notifier.setNotificationsEnabled,
-                    activeColor: VinRColors.goldLight,
+                    activeThumbColor: VinRColors.goldLight,
                   ),
                 ],
               ),
