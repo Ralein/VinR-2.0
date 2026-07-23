@@ -39,10 +39,32 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
   late AnimationController _pulseController;
   late Animation<double> _pulseScale;
 
+  // Persona companion avatars definition (diffo companion avatars)
   final List<Map<String, dynamic>> _personas = [
-    {'id': 'vinr', 'name': 'VinR Coach', 'icon': LucideIcons.sparkles, 'tag': 'Growth'},
-    {'id': 'listener', 'name': 'Gentle Listener', 'icon': LucideIcons.heart, 'tag': 'Empathy'},
-    {'id': 'stoic', 'name': 'Stoic Mentor', 'icon': LucideIcons.shield, 'tag': 'Wisdom'},
+    {
+      'id': 'vinr',
+      'name': 'VinR Coach',
+      'icon': LucideIcons.crown,
+      'color': VinRColors.gold,
+      'bgColor': const Color(0x25B8832A),
+      'tag': 'Growth'
+    },
+    {
+      'id': 'listener',
+      'name': 'Gentle Listener',
+      'icon': LucideIcons.heartHandshake,
+      'color': VinRColors.emerald,
+      'bgColor': VinRColors.emeraldGlow,
+      'tag': 'Empathy'
+    },
+    {
+      'id': 'stoic',
+      'name': 'Stoic Mentor',
+      'icon': LucideIcons.shield,
+      'color': VinRColors.sapphire,
+      'bgColor': const Color(0x252C6DB3),
+      'tag': 'Wisdom'
+    },
   ];
 
   final List<String> _quickPrompts = [
@@ -291,10 +313,25 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
     final bottomInset = MediaQuery.of(context).padding.bottom;
     final topInset = MediaQuery.of(context).padding.top;
 
+    // Distinct persona companion avatar resolution
+    IconData activePersonaIcon = LucideIcons.crown;
+    Color activePersonaColor = activeGold;
+    Color activePersonaBg = context.goldMutedColor;
+
+    if (chatState.persona == 'Gentle Listener') {
+      activePersonaIcon = LucideIcons.heartHandshake;
+      activePersonaColor = VinRColors.emerald;
+      activePersonaBg = VinRColors.emeraldGlow;
+    } else if (chatState.persona == 'Stoic Mentor') {
+      activePersonaIcon = LucideIcons.shield;
+      activePersonaColor = VinRColors.sapphire;
+      activePersonaBg = const Color(0x252C6DB3);
+    }
+
     return Scaffold(
       body: AmbientBackground(
         child: SafeArea(
-          bottom: false, // Prevent double bottomInset padding so input bar brings down cleanly
+          bottom: false,
           child: Column(
             children: [
               // Top Header Bar — Matching React Native SafeBlurView
@@ -310,12 +347,26 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
                       onPressed: () => context.pop(),
                     ),
                     const SizedBox(width: 4),
+
+                    // Active Persona Distinct Companion Avatar
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: activePersonaBg,
+                        border: Border.all(color: activePersonaColor, width: 1.5),
+                      ),
+                      child: Icon(activePersonaIcon, color: activePersonaColor, size: 18),
+                    ),
+                    const SizedBox(width: 10),
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('VinR AI Companion', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor, fontSize: 17)),
-                          const SizedBox(height: 2),
+                          Text(chatState.persona, style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor, fontSize: 16)),
+                          const SizedBox(height: 1),
                           Row(
                             children: [
                               Container(
@@ -324,7 +375,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
                                 decoration: const BoxDecoration(shape: BoxShape.circle, color: VinRColors.emerald),
                               ),
                               const SizedBox(width: 6),
-                              Text('Online • Ready to listen', style: TextStyle(color: mutedTextColor, fontSize: 11)),
+                              Text('Online • Companion Active', style: TextStyle(color: mutedTextColor, fontSize: 11)),
                             ],
                           ),
                         ],
@@ -344,7 +395,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
                 ),
               ),
 
-              // Persona Switcher Bar
+              // Persona Switcher Bar with distinct companion avatars
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -352,6 +403,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
                   children: _personas.map((p) {
                     final isSel = chatState.persona == p['name'];
                     final icon = p['icon'] as IconData;
+                    final pColor = p['color'] as Color;
 
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -364,13 +416,13 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isSel ? activeGold.withValues(alpha: isLight ? 0.15 : 0.25) : context.surfaceColor,
+                            color: isSel ? pColor.withValues(alpha: isLight ? 0.15 : 0.25) : context.surfaceColor,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: isSel ? activeGold : context.borderColor, width: isSel ? 1.5 : 1),
+                            border: Border.all(color: isSel ? pColor : context.borderColor, width: isSel ? 1.5 : 1),
                           ),
                           child: Row(
                             children: [
-                              Icon(icon, size: 14, color: isSel ? activeGold : context.textGhostColor),
+                              Icon(icon, size: 14, color: isSel ? pColor : context.textGhostColor),
                               const SizedBox(width: 6),
                               Text(
                                 p['name'] as String,
@@ -390,7 +442,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
               ),
               Divider(color: context.borderColor, height: 1),
 
-              // Messages Stream List
+              // Messages Stream List with distinct companion avatars
               Expanded(
                 child: ListView.builder(
                   controller: _scrollController,
@@ -418,10 +470,10 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
                                 height: 32,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: context.goldMutedColor,
-                                  border: Border.all(color: context.borderGoldColor),
+                                  color: activePersonaBg,
+                                  border: Border.all(color: activePersonaColor.withValues(alpha: 0.6)),
                                 ),
-                                child: Icon(LucideIcons.sparkles, color: activeGold, size: 16),
+                                child: Icon(activePersonaIcon, color: activePersonaColor, size: 16),
                               ),
                               const SizedBox(width: 8),
                             ],

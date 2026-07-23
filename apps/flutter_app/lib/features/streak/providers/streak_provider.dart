@@ -5,27 +5,13 @@ class StreakNotifier extends StateNotifier<StreakStateModel> {
   StreakNotifier()
       : super(
           StreakStateModel(
-            currentStreak: 5,
-            longestStreak: 12,
-            globalStreak: 12,
-            totalDaysCompleted: 5,
+            currentStreak: 0,
+            longestStreak: 0,
+            globalStreak: 0,
+            totalDaysCompleted: 0,
             isCompletedToday: false,
-            dailyCompletions: [
-              DailyCompletion(
-                id: 'cmp_1',
-                dayNumber: 1,
-                completedAt: DateTime.now().subtract(const Duration(days: 4)),
-                reflectionNote: 'Started the winning streak!',
-                moodRating: 4.5,
-              ),
-              DailyCompletion(
-                id: 'cmp_2',
-                dayNumber: 2,
-                completedAt: DateTime.now().subtract(const Duration(days: 3)),
-                reflectionNote: 'Great breathing session.',
-                moodRating: 5.0,
-              ),
-            ],
+            isWinner: false,
+            dailyCompletions: const [],
           ),
         );
 
@@ -52,8 +38,22 @@ class StreakNotifier extends StateNotifier<StreakStateModel> {
     );
   }
 
-  void reset() {
-    state = StreakStateModel();
+  void checkInToday() {
+    if (!state.isCompletedToday) {
+      markDayComplete();
+    }
+  }
+
+  void resetStreak() {
+    state = StreakStateModel(
+      currentStreak: 0,
+      longestStreak: 0,
+      globalStreak: 0,
+      totalDaysCompleted: 0,
+      isCompletedToday: false,
+      isWinner: false,
+      dailyCompletions: const [],
+    );
   }
 }
 

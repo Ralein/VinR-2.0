@@ -22,7 +22,7 @@ class VinRApp extends ConsumerWidget {
     final themeMode = ref.watch(themeProvider);
 
     return MaterialApp.router(
-      title: 'VinR 2.0 — Emotional Wellness & Growth Platform',
+      title: 'VinR — Emotional Wellness & Growth Platform',
       debugShowCheckedModeBanner: false,
       theme: VinRTheme.lightTheme,
       darkTheme: VinRTheme.darkTheme,
