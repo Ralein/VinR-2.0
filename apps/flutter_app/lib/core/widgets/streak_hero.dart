@@ -8,13 +8,13 @@ import 'progress_ring.dart';
 class StreakHero extends StatefulWidget {
   final int streak;
   final bool todayDone;
-  final List<bool> weeklyDays;
+  final List<bool>? weeklyDays;
 
   const StreakHero({
     super.key,
     required this.streak,
     this.todayDone = false,
-    this.weeklyDays = const [true, true, true, true, true, false, false],
+    this.weeklyDays,
   });
 
   @override
@@ -45,7 +45,10 @@ class _StreakHeroState extends State<StreakHero> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final completedCount = widget.weeklyDays.where((b) => b).length;
+    final activeDaysCount = widget.streak % 7 == 0 && widget.streak > 0 ? 7 : (widget.streak % 7);
+    final resolvedDays = widget.weeklyDays ?? List.generate(7, (index) => index < activeDaysCount);
+
+    final completedCount = resolvedDays.where((b) => b).length;
     final weeklyProgress = completedCount / 7.0;
     const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -85,7 +88,7 @@ class _StreakHeroState extends State<StreakHero> with SingleTickerProviderStateM
               scale: _flameScale,
               child: Icon(
                 LucideIcons.flame,
-                color: context.goldColor,
+                color: widget.streak > 0 ? context.goldColor : context.textGhostColor,
                 size: 48,
               ),
             ),
@@ -130,7 +133,7 @@ class _StreakHeroState extends State<StreakHero> with SingleTickerProviderStateM
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: List.generate(7, (index) {
-            final isDone = widget.weeklyDays[index];
+            final isDone = resolvedDays[index];
             return Column(
               children: [
                 Container(
@@ -157,8 +160,9 @@ class _StreakHeroState extends State<StreakHero> with SingleTickerProviderStateM
                 Text(
                   dayLabels[index],
                   style: VinRTypography.caption.copyWith(
-                    color: context.textGhostColor,
+                    color: isDone ? context.textColor : context.textGhostColor,
                     fontSize: 10,
+                    fontWeight: isDone ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
               ],

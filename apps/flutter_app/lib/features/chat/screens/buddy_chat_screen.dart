@@ -9,6 +9,7 @@ import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
 import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/audio_waveform_visualizer.dart';
+import '../../../core/widgets/vinr_toast.dart';
 import '../models/chat_message_model.dart';
 import '../providers/chat_provider.dart';
 
@@ -219,8 +220,11 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
                     onChanged: (val) {
                       setState(() => _voiceModeEnabled = val);
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(val ? 'Voice mode enabled 🔊' : 'Voice mode muted 🔇')),
+                      VinRToast.show(
+                        context,
+                        message: val ? 'Voice mode enabled' : 'Voice mode muted',
+                        icon: val ? LucideIcons.volume2 : LucideIcons.volumeX,
+                        iconColor: context.goldColor,
                       );
                     },
                     activeThumbColor: context.goldColor,
@@ -234,8 +238,11 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
                   onTap: () {
                     ref.read(chatProvider.notifier).clearMessages();
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Chat memory cleared.')),
+                    VinRToast.show(
+                      context,
+                      message: 'Chat memory cleared',
+                      icon: LucideIcons.trash2,
+                      iconColor: VinRColors.crimson,
                     );
                   },
                 ),

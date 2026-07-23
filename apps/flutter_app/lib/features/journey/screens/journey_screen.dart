@@ -8,6 +8,7 @@ import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/gold_button.dart';
+import '../../../core/widgets/vinr_toast.dart';
 import '../../streak/providers/streak_provider.dart';
 
 class JourneyScreen extends ConsumerWidget {
@@ -91,8 +92,11 @@ class JourneyScreen extends ConsumerWidget {
                           text: 'Mark Today Complete ✓',
                           onPressed: () {
                             notifier.markDayComplete();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Winning Streak Updated for Today! 🎉')),
+                            VinRToast.show(
+                              context,
+                              message: 'Winning Streak Updated for Today!',
+                              icon: LucideIcons.flame,
+                              iconColor: VinRColors.gold,
                             );
                           },
                         ),
