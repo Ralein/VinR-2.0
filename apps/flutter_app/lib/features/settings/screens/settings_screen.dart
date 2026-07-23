@@ -10,6 +10,7 @@ import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/vinr_toast.dart';
+import '../../../core/services/notification_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../onboarding/providers/onboarding_provider.dart';
 import '../providers/reminder_provider.dart';
@@ -299,27 +300,12 @@ class SettingsScreen extends ConsumerWidget {
                         label: const Text('Test Live Notification Alert', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                         onPressed: () {
                           reminderNotifier.recordNotificationSent();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              backgroundColor: context.surfaceColor,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: context.goldColor)),
-                              content: Row(
-                                children: [
-                                  Icon(LucideIcons.bellRing, color: context.goldColor),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text('VinR Daily Streak Reminder (${reminderState.reminderTime})', style: TextStyle(color: context.textColor, fontWeight: FontWeight.bold, fontSize: 13)),
-                                        Text('Time to record your daily win & keep your 21-day streak alive!', style: TextStyle(color: context.textMutedColor, fontSize: 11)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          ref.read(notificationServiceProvider.notifier).scheduleDailyStreakReminder(reminderState.reminderTime);
+                          VinRToast.show(
+                            context,
+                            message: 'Streak Reminder scheduled for ${reminderState.reminderTime}! Live notification queued.',
+                            icon: LucideIcons.bellRing,
+                            iconColor: VinRColors.gold,
                           );
                         },
                         style: OutlinedButton.styleFrom(
