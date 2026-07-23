@@ -98,7 +98,7 @@ class WelcomeScreen extends StatelessWidget {
 
                 GoldButton(
                   text: 'Begin your winning journey →',
-                  onPressed: () => context.push('/onboarding'),
+                  onPressed: () => context.push('/sign-up'),
                 ),
                 const SizedBox(height: 14),
 

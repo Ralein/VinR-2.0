@@ -29,7 +29,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: auth.isAuthenticated ? '/home' : '/welcome',
+    initialLocation: auth.isAuthenticated
+        ? (auth.user?.onboardingComplete == false ? '/onboarding' : '/home')
+        : '/welcome',
     routes: [
       GoRoute(
         path: '/welcome',
