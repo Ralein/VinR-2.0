@@ -24,7 +24,7 @@ class ProfileScreen extends ConsumerWidget {
       body: AmbientBackground(
         child: SafeArea(
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 100),
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

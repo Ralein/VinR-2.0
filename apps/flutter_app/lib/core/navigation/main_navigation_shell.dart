@@ -23,17 +23,20 @@ class MainNavigationShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentIndex = navigationShell.currentIndex;
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
 
     final barBg = isLight ? Colors.white : VinRColors.surface;
     final borderColor = isLight ? const Color(0x1A000000) : VinRColors.border;
     final activeGold = isLight ? const Color(0xFFB8832A) : VinRColors.goldLight;
     final inactiveColor = isLight ? const Color(0xFF7A7060) : VinRColors.textGhost;
 
+    final navBarHeight = 60.0 + bottomInset;
+
     return Scaffold(
       body: navigationShell,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 8.0),
+        padding: EdgeInsets.only(bottom: bottomInset > 0 ? bottomInset + 4 : 12.0),
         child: FloatingActionButton(
           onPressed: () => context.push('/buddy-chat'),
           backgroundColor: activeGold,
@@ -43,7 +46,8 @@ class MainNavigationShell extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: Container(
-        height: 76,
+        height: navBarHeight,
+        padding: EdgeInsets.only(bottom: bottomInset),
         decoration: BoxDecoration(
           color: barBg,
           border: Border(
@@ -86,46 +90,49 @@ class MainNavigationShell extends StatelessWidget {
             GestureDetector(
               onTap: () => _onItemTapped(2),
               child: Transform.translate(
-                offset: const Offset(0, -14),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: VinRColors.goldGradient,
-                        border: Border.all(
-                          color: currentIndex == 2 ? activeGold : VinRColors.borderGold,
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: activeGold.withValues(alpha: currentIndex == 2 ? 0.6 : 0.35),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                offset: const Offset(0, -10),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: VinRColors.goldGradient,
+                          border: Border.all(
+                            color: currentIndex == 2 ? activeGold : VinRColors.borderGold,
+                            width: 2,
                           ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          LucideIcons.film,
-                          color: Colors.white,
-                          size: 24,
+                          boxShadow: [
+                            BoxShadow(
+                              color: activeGold.withValues(alpha: currentIndex == 2 ? 0.6 : 0.35),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            LucideIcons.film,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'GLINT',
-                      style: VinRTypography.label.copyWith(
-                        fontSize: 9,
-                        color: currentIndex == 2 ? activeGold : inactiveColor,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: 2),
+                      Text(
+                        'GLINT',
+                        style: VinRTypography.label.copyWith(
+                          fontSize: 8.5,
+                          color: currentIndex == 2 ? activeGold : inactiveColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -168,45 +175,45 @@ class MainNavigationShell extends StatelessWidget {
   }) {
     final isSelected = index == currentIndex;
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: 22,
-            color: isSelected ? activeColor : inactiveColor,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: VinRTypography.label.copyWith(
-              fontSize: 9,
-              color: isSelected ? activeColor : inactiveColor,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-          const SizedBox(height: 2),
-          if (isSelected)
-            Container(
-              width: 16,
-              height: 3,
-              decoration: BoxDecoration(
-                color: activeColor,
-                borderRadius: BorderRadius.circular(2),
-                boxShadow: [
-                  BoxShadow(
-                    color: activeColor.withValues(alpha: 0.8),
-                    blurRadius: 4,
-                  ),
-                ],
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: isSelected ? activeColor : inactiveColor,
               ),
-            )
-          else
-            const SizedBox(height: 3),
-        ],
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: VinRTypography.label.copyWith(
+                  fontSize: 8.5,
+                  color: isSelected ? activeColor : inactiveColor,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              const SizedBox(height: 2),
+              if (isSelected)
+                Container(
+                  width: 14,
+                  height: 2.5,
+                  decoration: BoxDecoration(
+                    color: activeColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                )
+              else
+                const SizedBox(height: 2.5),
+            ],
+          ),
+        ),
       ),
     );
   }

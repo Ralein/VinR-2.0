@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../theme/theme_context.dart';
 import '../theme/vinr_colors.dart';
 import '../theme/vinr_typography.dart';
 import 'progress_ring.dart';
@@ -67,13 +68,13 @@ class _StreakHeroState extends State<StreakHero> with SingleTickerProviderStateM
                       fontSize: 64,
                       fontWeight: FontWeight.w900,
                       height: 1.0,
-                      color: VinRColors.gold,
+                      color: context.goldColor,
                     ),
                   ),
                   Text(
                     'DAY${widget.streak != 1 ? 'S' : ''}',
                     style: VinRTypography.label.copyWith(
-                      color: VinRColors.textMuted,
+                      color: context.textMutedColor,
                       letterSpacing: 1.0,
                     ),
                   ),
@@ -83,9 +84,9 @@ class _StreakHeroState extends State<StreakHero> with SingleTickerProviderStateM
             // Pulsing Flame
             ScaleTransition(
               scale: _flameScale,
-              child: const Icon(
+              child: Icon(
                 LucideIcons.flame,
-                color: VinRColors.gold,
+                color: context.goldColor,
                 size: 48,
               ),
             ),
@@ -112,7 +113,7 @@ class _StreakHeroState extends State<StreakHero> with SingleTickerProviderStateM
             Icon(
               widget.todayDone ? LucideIcons.checkCircle2 : LucideIcons.circle,
               size: 16,
-              color: widget.todayDone ? VinRColors.emerald : VinRColors.textGhost,
+              color: widget.todayDone ? context.emeraldColor : context.textGhostColor,
             ),
             const SizedBox(width: 8),
             Text(
@@ -120,7 +121,7 @@ class _StreakHeroState extends State<StreakHero> with SingleTickerProviderStateM
                   ? "Today's check-in complete"
                   : 'Complete a check-in to continue',
               style: VinRTypography.bodySm.copyWith(
-                color: widget.todayDone ? VinRColors.emerald : VinRColors.textMuted,
+                color: widget.todayDone ? context.emeraldColor : context.textMutedColor,
               ),
             ),
           ],
@@ -138,14 +139,14 @@ class _StreakHeroState extends State<StreakHero> with SingleTickerProviderStateM
                   height: 10,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isDone ? VinRColors.gold : VinRColors.elevated,
+                    color: isDone ? context.goldColor : context.elevatedColor,
                     border: isDone
                         ? null
-                        : Border.all(color: VinRColors.border, width: 1),
+                        : Border.all(color: context.borderColor, width: 1),
                     boxShadow: isDone
                         ? [
                             BoxShadow(
-                              color: VinRColors.gold.withValues(alpha: 0.5),
+                              color: context.goldColor.withValues(alpha: 0.5),
                               blurRadius: 6,
                               spreadRadius: 1,
                             ),
@@ -157,7 +158,7 @@ class _StreakHeroState extends State<StreakHero> with SingleTickerProviderStateM
                 Text(
                   dayLabels[index],
                   style: VinRTypography.caption.copyWith(
-                    color: VinRColors.textGhost,
+                    color: context.textGhostColor,
                     fontSize: 10,
                   ),
                 ),
