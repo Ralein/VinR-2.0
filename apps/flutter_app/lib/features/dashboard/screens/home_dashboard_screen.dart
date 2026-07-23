@@ -11,7 +11,6 @@ import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/avatar_ring.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/streak_hero.dart';
-import '../../../core/widgets/gold_button.dart';
 import '../../../core/widgets/sleep_mode_modal.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../streak/providers/streak_provider.dart';
@@ -175,8 +174,8 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                     GlassContainer(
                       child: StreakHero(
                         streak: streak.totalDaysCompleted,
-                        todayDone: streak.todayDone,
-                        weeklyDays: streak.weeklyDays,
+                        todayDone: streak.isCompletedToday,
+                        weeklyDays: const [true, true, true, true, true, false, false],
                       ),
                     ),
                     const SizedBox(height: 24),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../theme/theme_context.dart';
-import '../theme/vinr_colors.dart';
 import '../theme/vinr_typography.dart';
 import 'progress_ring.dart';
 
