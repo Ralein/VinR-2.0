@@ -47,7 +47,9 @@ class _JournalScreenState extends State<JournalScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Gratitude & Reflection Journal', style: VinRTypography.h1.copyWith(fontSize: 24)),
+                    Expanded(
+                      child: Text('Gratitude & Reflection Journal', style: VinRTypography.h1.copyWith(fontSize: 22)),
+                    ),
                     IconButton(
                       icon: Icon(_isRecording ? LucideIcons.square : LucideIcons.mic, color: _isRecording ? VinRColors.crimson : VinRColors.goldLight),
                       onPressed: () => setState(() => _isRecording = !_isRecording),

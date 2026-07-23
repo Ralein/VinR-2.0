@@ -35,7 +35,7 @@ class SectionHeader extends StatelessWidget {
               ),
             ],
           ),
-          if (action != null) action,
+          if (action != null) action as Widget,
         ],
       ),
     );
