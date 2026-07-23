@@ -52,6 +52,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return MainNavigationShell(navigationShell: navigationShell);
         },
         branches: [
+          // Tab 0: Home
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -60,6 +61,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          // Tab 1: Check-in / Journey
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -68,6 +70,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          // Tab 2: Glint (Center Instagram-style Reel)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -76,14 +79,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/immediate-relief',
-                builder: (context, state) => const ImmediateReliefScreen(),
-              ),
-            ],
-          ),
+          // Tab 3: Journal
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -92,14 +88,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/events',
-                builder: (context, state) => const EventsScreen(),
-              ),
-            ],
-          ),
+          // Tab 4: Profile
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -108,15 +97,20 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/reels',
-                builder: (context, state) => const ReelsScreen(),
-              ),
-            ],
-          ),
         ],
+      ),
+      // Standalone Routes
+      GoRoute(
+        path: '/immediate-relief',
+        builder: (context, state) => const ImmediateReliefScreen(),
+      ),
+      GoRoute(
+        path: '/events',
+        builder: (context, state) => const EventsScreen(),
+      ),
+      GoRoute(
+        path: '/reels',
+        builder: (context, state) => const ReelsScreen(),
       ),
       GoRoute(
         path: '/buddy-chat',
