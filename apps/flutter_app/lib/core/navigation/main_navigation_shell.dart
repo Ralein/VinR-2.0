@@ -36,7 +36,7 @@ class MainNavigationShell extends StatelessWidget {
       body: navigationShell,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: bottomInset > 0 ? bottomInset + 4 : 12.0),
+        padding: EdgeInsets.only(bottom: bottomInset > 0 ? bottomInset + 8 : 16.0),
         child: FloatingActionButton(
           onPressed: () => context.push('/buddy-chat'),
           backgroundColor: activeGold,
