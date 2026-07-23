@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
 import '../../../core/widgets/ambient_background.dart';
@@ -60,35 +61,42 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
     final chatState = ref.watch(chatProvider);
     final notifier = ref.read(chatProvider.notifier);
 
+    final isLight = context.isLight;
+    final primaryTextColor = context.textColor;
+    final mutedTextColor = context.textMutedColor;
+    final activeGold = context.goldColor;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       body: AmbientBackground(
         child: SafeArea(
           child: Column(
             children: [
-              // Header
+              // Header — Brought down slightly with top margin
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 12),
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: VinRColors.textPrimary),
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, color: primaryTextColor, size: 20),
                       onPressed: () => context.pop(),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('VinR AI Companion', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold)),
+                          Text('VinR AI Companion', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor, fontSize: 17)),
+                          const SizedBox(height: 2),
                           Row(
                             children: [
                               Container(
-                                width: 6,
-                                height: 6,
+                                width: 7,
+                                height: 7,
                                 decoration: const BoxDecoration(shape: BoxShape.circle, color: VinRColors.emerald),
                               ),
                               const SizedBox(width: 6),
-                              const Text('Online • Ready to listen', style: TextStyle(color: VinRColors.textMuted, fontSize: 11)),
+                              Text('Online • Ready to listen', style: TextStyle(color: mutedTextColor, fontSize: 11)),
                             ],
                           ),
                         ],
@@ -97,6 +105,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                     IconButton(
                       icon: const Icon(LucideIcons.trash2, color: VinRColors.crimson, size: 20),
                       onPressed: notifier.clearMessages,
+                      tooltip: 'Clear Chat',
                     ),
                   ],
                 ),
@@ -105,7 +114,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
               // Persona Carousel Bar
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 child: Row(
                   children: _personas.map((p) {
                     final isSel = chatState.persona == p['name'];
@@ -116,31 +125,35 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                       child: FilterChip(
                         selected: isSel,
                         showCheckmark: false,
-                        avatar: Icon(icon, size: 14, color: isSel ? Colors.black : VinRColors.goldLight),
-                        label: Text(p['name'] as String, style: TextStyle(color: isSel ? Colors.black : VinRColors.textPrimary, fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
-                        selectedColor: VinRColors.gold,
-                        backgroundColor: VinRColors.surface,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: isSel ? VinRColors.gold : VinRColors.border)),
+                        avatar: Icon(icon, size: 14, color: isSel ? Colors.black : activeGold),
+                        label: Text(p['name'] as String, style: TextStyle(color: isSel ? Colors.black : primaryTextColor, fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
+                        selectedColor: activeGold,
+                        backgroundColor: context.surfaceColor,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: isSel ? activeGold : context.borderColor)),
                         onSelected: (_) => notifier.setPersona(p['name'] as String),
                       ),
                     );
                   }).toList(),
                 ),
               ),
-              const Divider(color: VinRColors.border, height: 1),
+              const SizedBox(height: 4),
+              Divider(color: context.borderColor, height: 1),
 
-              // Messages Stream
+              // Messages Stream — comfortable padding
               Expanded(
                 child: ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 12),
                   itemCount: chatState.messages.length,
                   itemBuilder: (context, index) {
                     final msg = chatState.messages[index];
                     final isAi = msg.sender == MessageSender.ai;
 
+                    final aiBubbleBg = isLight ? Colors.white : VinRColors.surface;
+                    final userBubbleBg = isLight ? const Color(0xFF2C6DB3) : VinRColors.sapphire;
+
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.only(bottom: 14),
                       child: Row(
                         mainAxisAlignment: isAi ? MainAxisAlignment.start : MainAxisAlignment.end,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,25 +164,28 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                               height: 32,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: VinRColors.goldMuted,
-                                border: Border.all(color: VinRColors.borderGold),
+                                color: context.goldMutedColor,
+                                border: Border.all(color: context.borderGoldColor),
                               ),
-                              child: const Icon(LucideIcons.sparkles, color: VinRColors.goldLight, size: 16),
+                              child: Icon(LucideIcons.sparkles, color: activeGold, size: 16),
                             ),
                             const SizedBox(width: 8),
                           ],
                           Flexible(
                             child: Container(
-                              padding: const EdgeInsets.all(14),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               decoration: BoxDecoration(
-                                color: isAi ? VinRColors.surface : VinRColors.sapphire,
+                                color: isAi ? aiBubbleBg : userBubbleBg,
                                 borderRadius: BorderRadius.only(
-                                  topLeft: const Radius.circular(16),
-                                  topRight: const Radius.circular(16),
-                                  bottomLeft: Radius.circular(isAi ? 4 : 16),
-                                  bottomRight: Radius.circular(isAi ? 16 : 4),
+                                  topLeft: const Radius.circular(18),
+                                  topRight: const Radius.circular(18),
+                                  bottomLeft: Radius.circular(isAi ? 4 : 18),
+                                  bottomRight: Radius.circular(isAi ? 18 : 4),
                                 ),
-                                border: isAi ? Border.all(color: VinRColors.borderGold.withValues(alpha: 0.3)) : null,
+                                border: isAi ? Border.all(color: context.borderColor) : null,
+                                boxShadow: isLight
+                                    ? [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]
+                                    : [],
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,15 +193,15 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                                   Text(
                                     msg.text,
                                     style: VinRTypography.bodySm.copyWith(
-                                      color: isAi ? VinRColors.textPrimary : Colors.white,
-                                      height: 1.4,
+                                      color: isAi ? primaryTextColor : Colors.white,
+                                      height: 1.45,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     '${msg.timestamp.hour}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
                                     style: TextStyle(
-                                      color: isAi ? VinRColors.textGhost : Colors.white.withValues(alpha: 0.7),
+                                      color: isAi ? mutedTextColor : Colors.white.withValues(alpha: 0.7),
                                       fontSize: 10,
                                     ),
                                   ),
@@ -205,20 +221,20 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: VinRColors.goldLight)),
-                      SizedBox(width: 8),
-                      Text('VinR is reflecting...', style: TextStyle(color: VinRColors.textMuted, fontSize: 12)),
+                    children: [
+                      SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: activeGold)),
+                      const SizedBox(width: 8),
+                      Text('VinR is reflecting...', style: TextStyle(color: mutedTextColor, fontSize: 12)),
                     ],
                   ),
                 ),
               ],
 
-              // Voice Recording Bar or Text Input
+              // Bottom Voice / Text Input Row aligned neatly with bottom inset
               if (_isRecording) ...[
                 Container(
-                  padding: const EdgeInsets.all(16),
-                  color: VinRColors.surface,
+                  padding: EdgeInsets.only(left: 16, right: 16, top: 12, bottom: bottomInset > 0 ? bottomInset + 8 : 16),
+                  color: context.surfaceColor,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -231,7 +247,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                       ),
                       const AudioWaveformVisualizer(isPlaying: true, barColor: VinRColors.crimson),
                       IconButton(
-                        icon: const Icon(LucideIcons.send, color: VinRColors.gold),
+                        icon: Icon(LucideIcons.send, color: activeGold),
                         onPressed: () {
                           setState(() => _isRecording = false);
                           ref.read(chatProvider.notifier).sendMessage('Voice audio reflection captured', isVoice: true);
@@ -243,22 +259,23 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                 ),
               ] else ...[
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.only(left: 16, right: 16, top: 8, bottom: bottomInset > 0 ? bottomInset + 8 : 16),
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(LucideIcons.mic, color: VinRColors.goldLight),
+                        icon: Icon(LucideIcons.mic, color: activeGold),
                         onPressed: () => setState(() => _isRecording = true),
                       ),
                       Expanded(
                         child: TextField(
                           controller: _messageController,
-                          style: VinRTypography.body,
+                          style: TextStyle(color: primaryTextColor),
                           decoration: InputDecoration(
                             hintText: 'Share what\'s on your mind...',
-                            fillColor: VinRColors.surface,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: VinRColors.border)),
+                            hintStyle: TextStyle(color: mutedTextColor),
+                            fillColor: context.surfaceColor,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide(color: context.borderColor)),
                           ),
                           onSubmitted: (_) => _send(),
                         ),
@@ -268,7 +285,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> {
                         onPressed: _send,
                         icon: const Icon(LucideIcons.send, color: Colors.black, size: 18),
                         style: IconButton.styleFrom(
-                          backgroundColor: VinRColors.gold,
+                          backgroundColor: activeGold,
                           shape: const CircleBorder(),
                           padding: const EdgeInsets.all(12),
                         ),
