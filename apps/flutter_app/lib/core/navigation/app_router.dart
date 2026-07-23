@@ -135,6 +135,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const TherapistDirectoryScreen(),
       ),
       GoRoute(
+        path: '/therapists',
+        builder: (context, state) => const TherapistDirectoryScreen(),
+      ),
+      GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
       ),
