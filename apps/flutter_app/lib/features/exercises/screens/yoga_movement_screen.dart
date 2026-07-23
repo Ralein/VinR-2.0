@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
+import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/gold_button.dart';
 
@@ -11,39 +13,54 @@ class YogaMovementScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryTextColor = context.textColor;
+    final mutedTextColor = context.textMutedColor;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Guided Yoga & Movement', style: VinRTypography.h3),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => context.pop(),
-        ),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(gradient: VinRColors.voidGradient),
+      body: AmbientBackground(
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('5-MINUTE DESK RELEASE', style: VinRTypography.label),
+                // Top Header Row
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, color: primaryTextColor, size: 20),
+                      onPressed: () => context.pop(),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('Guided Yoga & Movement', style: VinRTypography.h3.copyWith(color: primaryTextColor)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                Text('5-MINUTE DESK RELEASE', style: VinRTypography.label.copyWith(color: mutedTextColor)),
                 const SizedBox(height: 12),
                 GlassContainer(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      const Icon(LucideIcons.activity, color: VinRColors.lavender, size: 54),
+                      const Icon(LucideIcons.activity, color: VinRColors.lavender, size: 48),
                       const SizedBox(height: 12),
-                      Text('Seated Spine Twist & Neck Release', style: VinRTypography.h3, textAlign: TextAlign.center),
+                      Text(
+                        'Seated Spine Twist & Neck Release',
+                        style: VinRTypography.h3.copyWith(color: primaryTextColor),
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: 8),
-                      Text('Release muscle tension stored in shoulders and upper back.', style: VinRTypography.bodySm, textAlign: TextAlign.center),
+                      Text(
+                        'Release muscle tension stored in shoulders and upper back.',
+                        style: VinRTypography.bodySm.copyWith(color: mutedTextColor),
+                        textAlign: TextAlign.center,
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text('POSE STEPS', style: VinRTypography.label),
+                Text('POSE STEPS', style: VinRTypography.label.copyWith(color: mutedTextColor)),
                 const SizedBox(height: 12),
                 Expanded(
                   child: ListView(
@@ -62,6 +79,7 @@ class YogaMovementScreen extends StatelessWidget {
                   text: 'Finish Pose Sequence',
                   onPressed: () => context.pop(),
                 ),
+                const SizedBox(height: 12),
               ],
             ),
           ),
@@ -87,7 +105,12 @@ class _PoseStepTile extends StatelessWidget {
             child: Text(step, style: const TextStyle(color: VinRColors.lavender, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 16),
-          Expanded(child: Text(title, style: VinRTypography.bodySm)),
+          Expanded(
+            child: Text(
+              title,
+              style: VinRTypography.bodySm.copyWith(color: context.textColor),
+            ),
+          ),
         ],
       ),
     );
