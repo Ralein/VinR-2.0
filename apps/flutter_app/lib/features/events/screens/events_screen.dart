@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
+import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/glass_container.dart';
+import '../../../core/widgets/section_header.dart';
 
 class EventsScreen extends StatelessWidget {
   const EventsScreen({super.key});
@@ -10,49 +12,65 @@ class EventsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Community & Workshops', style: VinRTypography.h3),
-        centerTitle: true,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(gradient: VinRColors.voidGradient),
+      body: AmbientBackground(
         child: SafeArea(
           child: ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             children: [
-              Text('UPCOMING LIVE SESSIONS', style: VinRTypography.label),
-              const SizedBox(height: 12),
+              Text('Events Near You', style: VinRTypography.h1.copyWith(fontSize: 26)),
+              const SizedBox(height: 16),
+
+              const SectionHeader(
+                title: 'UPCOMING WORKSHOPS',
+                icon: LucideIcons.calendar,
+                iconColor: VinRColors.emerald,
+              ),
+
               GlassContainer(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(LucideIcons.users, color: VinRColors.goldLight),
-                        const SizedBox(width: 8),
-                        Text('21-Day Winning Masterclass', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold)),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: const BoxDecoration(
+                            color: VinRColors.emeraldGlow,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(LucideIcons.users, color: VinRColors.emerald, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('21-Day Winning Masterclass', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold)),
+                              Text('Host: Dr. Elena Vance • Clinical Psychologist', style: VinRTypography.caption),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text('Host: Dr. Elena Vance • Clinical Psychologist', style: VinRTypography.caption),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     Text(
                       'Join 450+ members for an interactive live session on building sustainable mental toughness.',
-                      style: VinRTypography.bodySm,
+                      style: VinRTypography.bodySm.copyWith(color: VinRColors.textSecondary),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('RSVP Confirmed for Masterclass!')),
+                          const SnackBar(content: Text('RSVP Confirmed!')),
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: VinRColors.gold,
+                        backgroundColor: VinRColors.emerald,
                         foregroundColor: Colors.black,
+                        minimumSize: const Size.fromHeight(46),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('RSVP Now (Free)', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text('RSVP Free', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
