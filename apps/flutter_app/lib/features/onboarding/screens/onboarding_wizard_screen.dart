@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
+import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/gold_button.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -118,7 +119,7 @@ class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardScreen>
                       Icon(
                         isSelected ? LucideIcons.shieldCheck : LucideIcons.bot,
                         color: isSelected ? VinRColors.goldLight : VinRColors.textSecondary,
-                        size: 40,
+                        size: 36,
                       ),
                       const SizedBox(height: 12),
                       Text(av, style: VinRTypography.bodySm, textAlign: TextAlign.center),
@@ -285,23 +286,27 @@ class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardScreen>
     final notifier = ref.read(onboardingProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Step ${state.currentStep} of 9', style: VinRTypography.label),
-        centerTitle: true,
-        leading: state.currentStep > 1
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                onPressed: notifier.prevStep,
-              )
-            : null,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(gradient: VinRColors.voidGradient),
+      body: AmbientBackground(
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (state.currentStep > 1)
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: VinRColors.textPrimary),
+                        onPressed: notifier.prevStep,
+                      )
+                    else
+                      const SizedBox(width: 48),
+                    Text('Step ${state.currentStep} of 9', style: VinRTypography.label),
+                    const SizedBox(width: 48),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 LinearProgressIndicator(
                   value: state.currentStep / 9.0,
                   backgroundColor: VinRColors.surface,
@@ -314,7 +319,7 @@ class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardScreen>
                   ),
                 ),
                 GoldButton(
-                  text: state.currentStep == 9 ? 'Start My 21-Day Streak' : 'Continue',
+                  text: state.currentStep == 9 ? 'Start My 21-Day Streak' : 'Continue →',
                   onPressed: () {
                     if (state.currentStep == 9) {
                       notifier.complete();
