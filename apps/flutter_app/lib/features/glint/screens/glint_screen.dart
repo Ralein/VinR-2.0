@@ -2,118 +2,189 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
+import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/glass_container.dart';
 
-class GlintScreen extends StatelessWidget {
+class GlintScreen extends StatefulWidget {
   const GlintScreen({super.key});
+
+  @override
+  State<GlintScreen> createState() => _GlintScreenState();
+}
+
+class _GlintScreenState extends State<GlintScreen> {
+  String _selectedTopic = 'Stress Relief';
+  bool _showSettings = false;
+
+  final List<Map<String, dynamic>> _glints = [
+    {
+      'title': 'How 4-7-8 Breathing Resets Your Vagus Nerve in 60 Seconds',
+      'channel': 'VinR Science',
+      'tag': 'Stress Relief',
+      'icon': LucideIcons.wind,
+      'color': VinRColors.emerald,
+    },
+    {
+      'title': 'Overcoming the 3-Day Habit Slump on Your 21-Day Winning Streak',
+      'channel': 'Growth Partner',
+      'tag': 'Discipline',
+      'icon': LucideIcons.target,
+      'color': VinRColors.gold,
+    },
+    {
+      'title': '3 Stoic Mindset Tricks for Emotional Fortitude and Calm',
+      'channel': 'Stoic Mind',
+      'tag': 'Mindfulness',
+      'icon': LucideIcons.brain,
+      'color': VinRColors.sapphire,
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Glint — AI Mood & Reflection', style: VinRTypography.h3),
-        centerTitle: true,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(gradient: VinRColors.voidGradient),
+      body: AmbientBackground(
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('EMOTIONAL SENTIMENT ANALYTICS', style: VinRTypography.label),
-                const SizedBox(height: 12),
-                GlassContainer(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: const BoxDecoration(
-                          color: VinRColors.emeraldGlow,
-                          shape: BoxShape.circle,
+          child: Column(
+            children: [
+              // Header Row
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.flame, color: VinRColors.gold, size: 24),
+                        const SizedBox(width: 8),
+                        Text('Glint', style: VinRTypography.h1.copyWith(fontSize: 26)),
+                        const SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: () => setState(() => _showSettings = !_showSettings),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: VinRColors.goldMuted,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: VinRColors.borderGold),
+                            ),
+                            child: Text(
+                              _selectedTopic,
+                              style: VinRTypography.caption.copyWith(color: VinRColors.goldLight, fontWeight: FontWeight.bold),
+                            ),
+                          ),
                         ),
-                        child: const Icon(LucideIcons.smile, color: VinRColors.emerald, size: 36),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Overall State: Calibrated & Confident', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            Text('84% Positive sentiment over the last 7 days.', style: VinRTypography.bodySm),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(LucideIcons.refreshCw, color: VinRColors.textMuted, size: 20),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Feed refreshed!')),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                Text('AI REFLECTION INSIGHTS FEED', style: VinRTypography.label),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: ListView(
+              ),
+
+              // Perspective Tuning Bar
+              if (_showSettings) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  color: VinRColors.surface,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildInsightCard(
-                        title: 'Morning Focus Peak',
-                        time: 'Today, 9:30 AM',
-                        content: 'Your reflection log showed high clarity after completing the 4-7-8 breathing exercise.',
-                        tag: 'Focus',
-                        tagColor: VinRColors.emerald,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildInsightCard(
-                        title: 'Anxiety Pattern Intercepted',
-                        time: 'Yesterday, 8:15 PM',
-                        content: 'You utilized the 5-4-3-2-1 grounding protocol when feeling overwhelmed and restored calm within 4 minutes.',
-                        tag: 'Resilience',
-                        tagColor: VinRColors.sapphire,
+                      Text('PERSPECTIVE TUNING', style: VinRTypography.label),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: ['Stress Relief', 'Focus', 'Discipline', 'Mindfulness'].map((topic) {
+                          final isSel = _selectedTopic == topic;
+                          return ChoiceChip(
+                            selected: isSel,
+                            label: Text(topic, style: TextStyle(color: isSel ? Colors.black : VinRColors.textPrimary)),
+                            selectedColor: VinRColors.gold,
+                            backgroundColor: VinRColors.voidBg,
+                            onSelected: (_) {
+                              setState(() {
+                                _selectedTopic = topic;
+                                _showSettings = false;
+                              });
+                            },
+                          );
+                        }).toList(),
                       ),
                     ],
                   ),
                 ),
               ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildInsightCard({
-    required String title,
-    required String time,
-    required String content,
-    required String tag,
-    required Color tagColor,
-  }) {
-    return GlassContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(title, style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: tagColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: tagColor.withValues(alpha: 0.4)),
+              // Shorts Feed List
+              Expanded(
+                child: PageView.builder(
+                  scrollDirection: Axis.vertical,
+                  itemCount: _glints.length,
+                  itemBuilder: (context, index) {
+                    final item = _glints[index];
+                    return Container(
+                      margin: const EdgeInsets.all(20),
+                      child: GlassContainer(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: (item['color'] as Color).withValues(alpha: 0.15),
+                                  border: Border.all(color: item['color'] as Color, width: 2),
+                                ),
+                                child: Icon(item['icon'] as IconData, color: item['color'] as Color, size: 54),
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: (item['color'] as Color).withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(item['tag'] as String, style: TextStyle(color: item['color'] as Color, fontSize: 11, fontWeight: FontWeight.bold)),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(item['title'] as String, style: VinRTypography.h3),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: VinRColors.borderLight,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(item['channel'] as String, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                                ),
+                                const SizedBox(width: 12),
+                                const Icon(LucideIcons.music, color: VinRColors.textMuted, size: 14),
+                                const SizedBox(width: 4),
+                                Text('Original Audio', style: VinRTypography.caption),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                child: Text(tag, style: TextStyle(color: tagColor, fontSize: 11, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(time, style: VinRTypography.caption),
-          const SizedBox(height: 12),
-          Text(content, style: VinRTypography.bodySm),
-        ],
+        ),
       ),
     );
   }
