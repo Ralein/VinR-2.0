@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
 import '../../../core/theme/theme_provider.dart';
@@ -80,6 +81,39 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              const SectionHeader(
+                title: 'ONBOARDING & IDENTITY',
+                icon: LucideIcons.sparkles,
+              ),
+
+              GlassContainer(
+                onTap: () => context.push('/onboarding'),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: context.goldMutedColor,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(LucideIcons.compass, color: context.goldColor),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Custom Onboarding Wizard', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: context.textColor)),
+                          Text('Customize your 9-step identity & focus preferences.', style: VinRTypography.caption.copyWith(color: context.textMutedColor)),
+                        ],
+                      ),
+                    ),
+                    Icon(LucideIcons.chevronRight, color: context.textMutedColor, size: 18),
                   ],
                 ),
               ),

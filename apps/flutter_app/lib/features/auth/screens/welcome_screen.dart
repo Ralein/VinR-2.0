@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../../core/theme/vinr_colors.dart';
+import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_typography.dart';
 import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/glass_container.dart';
@@ -29,21 +29,21 @@ class WelcomeScreen extends StatelessWidget {
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: VinRColors.goldMuted,
-                      border: Border.all(color: VinRColors.borderGold, width: 2),
+                      color: context.goldMutedColor,
+                      border: Border.all(color: context.borderGoldColor, width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: VinRColors.gold.withValues(alpha: 0.3),
+                          color: context.goldColor.withValues(alpha: 0.3),
                           blurRadius: 24,
                           spreadRadius: 4,
                         ),
                       ],
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Icon(
                         LucideIcons.flame,
                         size: 48,
-                        color: VinRColors.goldLight,
+                        color: context.goldLightColor,
                       ),
                     ),
                   ),
@@ -57,6 +57,7 @@ class WelcomeScreen extends StatelessWidget {
                     fontSize: 44,
                     fontWeight: FontWeight.bold,
                     letterSpacing: -1,
+                    color: context.textColor,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -66,7 +67,7 @@ class WelcomeScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: VinRTypography.h2.copyWith(
                     fontSize: 24,
-                    color: VinRColors.goldLight,
+                    color: context.goldLightColor,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -75,7 +76,7 @@ class WelcomeScreen extends StatelessWidget {
                   'The science-based system that rebuilds\nyour habits, identity & momentum.',
                   textAlign: TextAlign.center,
                   style: VinRTypography.bodySm.copyWith(
-                    color: VinRColors.textMuted,
+                    color: context.textMutedColor,
                     height: 1.5,
                   ),
                 ),
@@ -97,14 +98,14 @@ class WelcomeScreen extends StatelessWidget {
 
                 GoldButton(
                   text: 'Begin your winning journey →',
-                  onPressed: () => context.push('/sign-up'),
+                  onPressed: () => context.push('/onboarding'),
                 ),
                 const SizedBox(height: 14),
 
                 OutlinedButton(
                   onPressed: () => context.push('/sign-in'),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: VinRColors.borderLight),
+                    side: BorderSide(color: context.borderColor),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -114,7 +115,7 @@ class WelcomeScreen extends StatelessWidget {
                     'Already winning? Sign in →',
                     style: VinRTypography.body.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: VinRColors.textPrimary,
+                      color: context.textColor,
                     ),
                   ),
                 ),
@@ -138,9 +139,9 @@ class _TrustPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: VinRColors.goldLight, size: 14),
+        Icon(icon, color: context.goldLightColor, size: 14),
         const SizedBox(width: 4),
-        Text(label, style: VinRTypography.caption.copyWith(fontSize: 11)),
+        Text(label, style: VinRTypography.caption.copyWith(fontSize: 11, color: context.textMutedColor)),
       ],
     );
   }

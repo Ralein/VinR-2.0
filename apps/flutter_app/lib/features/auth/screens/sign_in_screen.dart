@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/vinr_colors.dart';
+import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_typography.dart';
+import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/gold_button.dart';
 import '../providers/auth_provider.dart';
 
@@ -42,14 +43,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.textColor),
           onPressed: () => context.pop(),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: VinRColors.voidGradient,
-        ),
+      body: AmbientBackground(
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -58,35 +56,43 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               children: [
                 Text(
                   'Welcome Back',
-                  style: VinRTypography.h1,
+                  style: VinRTypography.h1.copyWith(color: context.textColor),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Sign in to continue your 21-day winning streak.',
-                  style: VinRTypography.bodySm,
+                  style: VinRTypography.bodySm.copyWith(color: context.textMutedColor),
                 ),
                 const SizedBox(height: 36),
-                Text('EMAIL ADDRESS', style: VinRTypography.label),
+                Text(
+                  'EMAIL ADDRESS',
+                  style: VinRTypography.label.copyWith(color: context.textMutedColor, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: VinRTypography.body,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: context.textColor),
+                  decoration: InputDecoration(
                     hintText: 'name@example.com',
-                    prefixIcon: Icon(Icons.email_outlined, color: VinRColors.textMuted),
+                    hintStyle: TextStyle(color: context.textMutedColor),
+                    prefixIcon: Icon(Icons.email_outlined, color: context.textMutedColor),
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text('PASSWORD', style: VinRTypography.label),
+                Text(
+                  'PASSWORD',
+                  style: VinRTypography.label.copyWith(color: context.textMutedColor, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _passwordController,
                   obscureText: true,
-                  style: VinRTypography.body,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: context.textColor),
+                  decoration: InputDecoration(
                     hintText: '••••••••',
-                    prefixIcon: Icon(Icons.lock_outline, color: VinRColors.textMuted),
+                    hintStyle: TextStyle(color: context.textMutedColor),
+                    prefixIcon: Icon(Icons.lock_outline, color: context.textMutedColor),
                   ),
                 ),
                 const Spacer(),
@@ -102,7 +108,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     child: Text(
                       "Don't have an account? Sign Up",
                       style: VinRTypography.bodySm.copyWith(
-                        color: VinRColors.goldLight,
+                        color: context.goldColor,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
