@@ -11,6 +11,7 @@ import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../onboarding/providers/onboarding_provider.dart';
+import '../providers/reminder_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -58,7 +59,7 @@ class SettingsScreen extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
-                  children: ['VinR Classic', 'Zen Master', 'Stoic Guardian', 'Solar Spark'].map((avatar) {
+                  children: ['VinR Coach', 'Zen Master', 'Stoic Guardian', 'Solar Spark'].map((avatar) {
                     final isSel = onboardingState.avatar == avatar;
                     return ChoiceChip(
                       selected: isSel,
@@ -116,6 +117,8 @@ class SettingsScreen extends ConsumerWidget {
     final themeMode = ref.watch(themeProvider);
     final themeNotifier = ref.read(themeProvider.notifier);
     final authNotifier = ref.read(authProvider.notifier);
+    final reminderState = ref.watch(reminderProvider);
+    final reminderNotifier = ref.read(reminderProvider.notifier);
 
     return Scaffold(
       body: AmbientBackground(
@@ -212,6 +215,114 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
                     Icon(LucideIcons.chevronRight, color: context.textMutedColor, size: 18),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // DAILY STREAK REMINDERS & NOTIFICATIONS
+              const SectionHeader(
+                title: 'DAILY STREAK REMINDERS',
+                icon: LucideIcons.bell,
+                iconColor: VinRColors.emerald,
+              ),
+
+              GlassContainer(
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: const BoxDecoration(
+                                color: VinRColors.emeraldGlow,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(LucideIcons.bell, color: VinRColors.emerald),
+                            ),
+                            const SizedBox(width: 14),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Daily Streak Reminder', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: context.textColor)),
+                                Text('Receive daily check-in nudge', style: VinRTypography.caption.copyWith(color: context.textMutedColor)),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Switch(
+                          value: reminderState.isEnabled,
+                          onChanged: (val) {
+                            reminderNotifier.toggleReminder(val);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(val ? 'Daily streak reminder activated! 🔔' : 'Reminders paused 🔕')),
+                            );
+                          },
+                          activeThumbColor: context.goldColor,
+                        ),
+                      ],
+                    ),
+                    if (reminderState.isEnabled) ...[
+                      const Divider(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Reminder Time', style: TextStyle(color: context.textColor, fontWeight: FontWeight.w600)),
+                          Wrap(
+                            spacing: 6,
+                            children: ['08:00 AM', '01:00 PM', '08:00 PM'].map((t) {
+                              final isSel = reminderState.reminderTime == t;
+                              return ChoiceChip(
+                                selected: isSel,
+                                label: Text(t, style: TextStyle(color: isSel ? Colors.black : context.textColor, fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
+                                selectedColor: context.goldColor,
+                                backgroundColor: context.surfaceColor,
+                                onSelected: (_) => reminderNotifier.setReminderTime(t),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        icon: const Icon(LucideIcons.send, size: 14),
+                        label: const Text('Test Live Notification Alert', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        onPressed: () {
+                          reminderNotifier.recordNotificationSent();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: context.surfaceColor,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: context.goldColor)),
+                              content: Row(
+                                children: [
+                                  Icon(LucideIcons.bellRing, color: context.goldColor),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text('VinR Daily Streak Reminder (${reminderState.reminderTime})', style: TextStyle(color: context.textColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                                        Text('Time to record your daily win & keep your 21-day streak alive!', style: TextStyle(color: context.textMutedColor, fontSize: 11)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: context.goldColor,
+                          side: BorderSide(color: context.goldColor),
+                          minimumSize: const Size.fromHeight(40),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

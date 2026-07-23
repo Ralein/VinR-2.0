@@ -665,7 +665,7 @@ const screens = {
                     </div>
 
                     <div style="text-align: center; color: var(--text-lo); font-size: 12px; margin-top: 40px; animation: fadeInDown 0.5s ease forwards; opacity: 0; animation-delay: 0.3s;">
-                        VinR v2.0.0-demo
+                        VinR
                     </div>
                 </div>
             `;
