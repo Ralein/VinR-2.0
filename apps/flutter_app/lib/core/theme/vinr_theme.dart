@@ -22,7 +22,6 @@ class VinRTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        scaffoldColorScheme: ColorScheme.dark(),
         iconTheme: IconThemeData(color: VinRColors.textPrimary),
       ),
       inputDecorationTheme: InputDecorationTheme(
