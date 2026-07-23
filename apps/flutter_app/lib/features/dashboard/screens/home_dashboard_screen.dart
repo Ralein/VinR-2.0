@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
+import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
 import '../../../core/widgets/ambient_background.dart';
@@ -60,7 +61,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
           child: Stack(
             children: [
               SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 16.0, bottom: 100.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -76,19 +77,19 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: VinRColors.goldMuted,
+                                color: context.goldMutedColor,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: VinRColors.borderGold),
+                                border: Border.all(color: context.borderGoldColor),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(LucideIcons.calendarDays, color: VinRColors.goldLight, size: 12),
+                                  Icon(LucideIcons.calendarDays, color: context.goldLightColor, size: 12),
                                   const SizedBox(width: 6),
                                   Text(
                                     _getDateChip(),
                                     style: VinRTypography.label.copyWith(
-                                      color: VinRColors.goldLight,
+                                      color: context.goldLightColor,
                                       fontSize: 10.5,
                                     ),
                                   ),
@@ -99,7 +100,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                             Text(
                               _getGreeting().toUpperCase(),
                               style: VinRTypography.label.copyWith(
-                                color: VinRColors.textMuted,
+                                color: context.textMutedColor,
                                 letterSpacing: 1.5,
                                 fontSize: 11,
                               ),
@@ -107,7 +108,10 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                             const SizedBox(height: 2),
                             Text(
                               'Welcome to VinR',
-                              style: VinRTypography.h1.copyWith(fontSize: 26),
+                              style: VinRTypography.h1.copyWith(
+                                fontSize: 26,
+                                color: context.textColor,
+                              ),
                             ),
                           ],
                         ),
@@ -119,24 +123,11 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                                   : 'VR',
                               size: 48,
                             ),
-                            const SizedBox(height: 8),
-                            GestureDetector(
-                              onTap: () => ref.read(authProvider.notifier).signOut(),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Icon(LucideIcons.logOut, color: VinRColors.crimson, size: 12),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Sign Out',
-                                    style: TextStyle(
-                                      color: VinRColors.crimson,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            const SizedBox(height: 6),
+                            IconButton(
+                              icon: Icon(LucideIcons.moon, color: context.textMutedColor, size: 18),
+                              onPressed: () => setState(() => _showSleepModal = true),
+                              tooltip: 'Sleep Mode',
                             ),
                           ],
                         ),
@@ -146,21 +137,29 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
 
                     // Daily Quote Card
                     GlassContainer(
-                      color: VinRColors.goldMuted,
-                      border: Border.all(color: VinRColors.borderGold),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      child: Row(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(LucideIcons.quote, color: VinRColors.goldLight, size: 16),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              _getDailyQuote(),
-                              style: VinRTypography.italic.copyWith(
-                                fontSize: 14,
-                                color: VinRColors.textSecondary,
+                          Row(
+                            children: [
+                              Icon(LucideIcons.quote, color: context.goldColor, size: 16),
+                              const SizedBox(width: 8),
+                              Text(
+                                'DAILY REFLECTION',
+                                style: VinRTypography.label.copyWith(
+                                  color: context.goldColor,
+                                  letterSpacing: 1.2,
+                                  fontSize: 11,
+                                ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '"${_getDailyQuote()}"',
+                            style: VinRTypography.italic.copyWith(
+                              fontSize: 18,
+                              color: context.textColor,
                             ),
                           ),
                         ],
@@ -168,56 +167,96 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Streak Hero Card
+                    // Streak Hero Section
+                    const SectionHeader(
+                      title: 'WINNING STREAK',
+                      icon: LucideIcons.flame,
+                    ),
                     GlassContainer(
-                      border: Border.all(color: VinRColors.borderGold),
-                      padding: const EdgeInsets.all(20),
                       child: StreakHero(
-                        streak: streak.currentStreak,
-                        todayDone: streak.isCompletedToday,
+                        streak: streak.totalDaysCompleted,
+                        todayDone: streak.todayDone,
+                        weeklyDays: streak.weeklyDays,
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
 
-                    // Adaptive For You Nudges Section
+                    // Quick Actions Section
                     const SectionHeader(
-                      title: 'FOR YOU',
-                      icon: LucideIcons.sparkles,
-                      iconColor: VinRColors.goldLight,
+                      title: 'QUICK RELIEF & EXERCISES',
+                      icon: LucideIcons.zap,
                     ),
-                    GlassContainer(
-                      onTap: () => context.push('/therapist'),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: const BoxDecoration(
-                              color: VinRColors.sapphireGlow,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(LucideIcons.brain, color: VinRColors.sapphire),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GlassContainer(
+                            onTap: () => context.push('/breathing'),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Connect with a Therapist', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold)),
-                                Text('Book a 1-on-1 growth guidance session.', style: VinRTypography.caption),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: VinRColors.sapphireGlow,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: VinRColors.sapphire.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Icon(LucideIcons.wind, color: context.sapphireColor, size: 22),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  '4-7-8 Breath',
+                                  style: VinRTypography.bodySm.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: context.textColor,
+                                  ),
+                                ),
+                                Text(
+                                  'Calm Vagus Nerve',
+                                  style: VinRTypography.caption.copyWith(color: context.textMutedColor),
+                                ),
                               ],
                             ),
                           ),
-                          const Icon(LucideIcons.chevronRight, color: VinRColors.textMuted, size: 18),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: GlassContainer(
+                            onTap: () => context.push('/grounding'),
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: VinRColors.emeraldGlow,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: VinRColors.emerald.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Icon(LucideIcons.layers, color: context.emeraldColor, size: 22),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  '5-4-3-2-1 Sense',
+                                  style: VinRTypography.bodySm.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: context.textColor,
+                                  ),
+                                ),
+                                Text(
+                                  'Ground Mind',
+                                  style: VinRTypography.caption.copyWith(color: context.textMutedColor),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 24),
 
-                    // AI Companion Section
+                    // AI Companion CTA
                     const SectionHeader(
-                      title: 'YOUR AI COMPANION',
-                      icon: LucideIcons.messageCircle,
-                      iconColor: VinRColors.lavender,
+                      title: 'GROWTH PARTNER',
+                      icon: LucideIcons.sparkles,
                     ),
                     GlassContainer(
                       onTap: () => context.push('/buddy-chat'),
@@ -225,107 +264,41 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.all(12),
-                            decoration: const BoxDecoration(
-                              color: VinRColors.lavenderGlow,
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
+                              color: context.goldMutedColor,
+                              border: Border.all(color: context.borderGoldColor),
                             ),
-                            child: const Icon(LucideIcons.sparkles, color: VinRColors.lavender),
+                            child: Icon(LucideIcons.bot, color: context.goldColor, size: 24),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Talk to VinR Buddy', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold)),
-                                Text("I'm always here to listen. Share what's on your mind.", style: VinRTypography.caption),
+                                Text(
+                                  'Chat with VinR AI',
+                                  style: VinRTypography.body.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: context.textColor,
+                                  ),
+                                ),
+                                Text(
+                                  'Personalized daily reflection & coach.',
+                                  style: VinRTypography.caption.copyWith(color: context.textMutedColor),
+                                ),
                               ],
                             ),
                           ),
-                          const Icon(LucideIcons.chevronRight, color: VinRColors.textMuted, size: 18),
+                          Icon(LucideIcons.chevronRight, color: context.textMutedColor, size: 18),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
-
-                    // How are you feeling?
-                    const SectionHeader(
-                      title: 'HOW ARE YOU FEELING?',
-                      icon: LucideIcons.heart,
-                      iconColor: VinRColors.crimson,
-                    ),
-                    GoldButton(
-                      text: 'Start a Check-In',
-                      onPressed: () => context.push('/home'),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Gratitude Journal Section
-                    const SectionHeader(
-                      title: 'GRATITUDE JOURNAL',
-                      icon: LucideIcons.bookOpen,
-                      iconColor: VinRColors.goldLight,
-                    ),
-                    GlassContainer(
-                      onTap: () => context.push('/journal'),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: const BoxDecoration(
-                              color: VinRColors.goldMuted,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(LucideIcons.bookOpen, color: VinRColors.goldLight),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Daily Gratitude', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold)),
-                                Text('Reflect & Grow • Document daily wins', style: VinRTypography.caption),
-                              ],
-                            ),
-                          ),
-                          const Icon(LucideIcons.chevronRight, color: VinRColors.goldLight, size: 18),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Sleep Mode Card
-                    GlassContainer(
-                      onTap: () => setState(() => _showSleepModal = true),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: const BoxDecoration(
-                              color: VinRColors.sapphireGlow,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(LucideIcons.moon, color: VinRColors.sapphire),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Sleep Mode', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold)),
-                                Text('Dim lights • breathing • auto-stop', style: VinRTypography.caption),
-                              ],
-                            ),
-                          ),
-                          const Icon(LucideIcons.chevronRight, color: VinRColors.textMuted, size: 18),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
 
-              // Sleep Mode Modal Overlay
+              // Sleep Mode Overlay Modal
               SleepModeModal(
                 visible: _showSleepModal,
                 onClose: () => setState(() => _showSleepModal = false),
