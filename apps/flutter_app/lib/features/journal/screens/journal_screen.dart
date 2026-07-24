@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
@@ -10,25 +12,40 @@ import '../../../core/widgets/gold_button.dart';
 import '../../../core/widgets/audio_waveform_visualizer.dart';
 import '../../../core/widgets/vinr_toast.dart';
 
-class JournalScreen extends StatefulWidget {
+class JournalScreen extends ConsumerStatefulWidget {
   const JournalScreen({super.key});
 
   @override
-  State<JournalScreen> createState() => _JournalScreenState();
+  ConsumerState<JournalScreen> createState() => _JournalScreenState();
 }
 
-class _JournalScreenState extends State<JournalScreen> {
+class _JournalScreenState extends ConsumerState<JournalScreen> {
   String _viewMode = 'write'; // 'write' | 'entries'
-  bool _isRecording = false;
+  bool _isDictating = false;
+  String _selectedMood = 'Balanced';
   String _searchQuery = '';
+
+  late stt.SpeechToText _speech;
 
   final _g1Controller = TextEditingController();
   final _g2Controller = TextEditingController();
   final _g3Controller = TextEditingController();
   final _reflectionController = TextEditingController();
 
-  // Dynamic user-created saved entries list (No hardcoded mockups)
   final List<Map<String, dynamic>> _savedEntries = [];
+
+  final List<Map<String, dynamic>> _moodOptions = [
+    {'name': 'Energized', 'icon': LucideIcons.zap, 'color': VinRColors.gold},
+    {'name': 'Balanced', 'icon': LucideIcons.smile, 'color': VinRColors.emerald},
+    {'name': 'Calm', 'icon': LucideIcons.wind, 'color': VinRColors.sapphire},
+    {'name': 'Heavy', 'icon': LucideIcons.cloudRain, 'color': VinRColors.lavender},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _speech = stt.SpeechToText();
+  }
 
   @override
   void dispose() {
@@ -39,6 +56,43 @@ class _JournalScreenState extends State<JournalScreen> {
     super.dispose();
   }
 
+  void _toggleVoiceDictation() async {
+    if (!_isDictating) {
+      bool available = await _speech.initialize(
+        onStatus: (val) => debugPrint('Dictation status: $val'),
+        onError: (val) => debugPrint('Dictation error: $val'),
+      );
+      if (!mounted) return;
+      if (available) {
+        setState(() => _isDictating = true);
+        _speech.listen(
+          onResult: (val) {
+            if (mounted) {
+              setState(() {
+                final text = val.recognizedWords;
+                if (_reflectionController.text.isEmpty) {
+                  _reflectionController.text = text;
+                } else {
+                  _reflectionController.text = '${_reflectionController.text} $text';
+                }
+              });
+            }
+          },
+        );
+      } else {
+        VinRToast.show(
+          context,
+          message: 'Speech dictation not available on device',
+          icon: LucideIcons.micOff,
+          iconColor: VinRColors.crimson,
+        );
+      }
+    } else {
+      setState(() => _isDictating = false);
+      _speech.stop();
+    }
+  }
+
   void _saveEntry() {
     final g1 = _g1Controller.text.trim();
     final g2 = _g2Controller.text.trim();
@@ -46,8 +100,11 @@ class _JournalScreenState extends State<JournalScreen> {
     final note = _reflectionController.text.trim();
 
     if (g1.isEmpty && g2.isEmpty && g3.isEmpty && note.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please write at least one gratitude point or reflection.')),
+      VinRToast.show(
+        context,
+        message: 'Please enter at least one gratitude prompt or reflection note',
+        icon: LucideIcons.alertCircle,
+        iconColor: VinRColors.gold,
       );
       return;
     }
@@ -58,21 +115,24 @@ class _JournalScreenState extends State<JournalScreen> {
       _savedEntries.insert(0, {
         'id': 'entry_${DateTime.now().millisecondsSinceEpoch}',
         'date': 'Today, ${_formatCurrentTime()}',
-        'items': items.isNotEmpty ? items : ['Logged personal gratitude reflection'],
-        'note': note.isNotEmpty ? note : 'Reflected on daily wins.',
-        'tags': ['Daily Gratitude'],
-        'aiReflection': 'Gratitude practice reinforced! Your reflection helps build positive neural pathways for daily resilience.'
+        'mood': _selectedMood,
+        'items': items.isNotEmpty ? items : ['Logged personal reflection'],
+        'note': note.isNotEmpty ? note : 'Reflected on personal growth and daily wins.',
+        'tags': ['Daily Gratitude', _selectedMood],
+        'aiReflection': 'Gratitude entry saved! Building daily self-reflection strengthens emotional resilience and focus.'
       });
+
       _g1Controller.clear();
       _g2Controller.clear();
       _g3Controller.clear();
       _reflectionController.clear();
+      _isDictating = false;
       _viewMode = 'entries';
     });
 
     VinRToast.show(
       context,
-      message: 'Gratitude Journal Entry Saved!',
+      message: 'Gratitude Entry Saved!',
       icon: LucideIcons.checkCircle2,
       iconColor: VinRColors.gold,
     );
@@ -84,7 +144,7 @@ class _JournalScreenState extends State<JournalScreen> {
     });
     VinRToast.show(
       context,
-      message: 'Gratitude entry deleted',
+      message: 'Journal entry deleted',
       icon: LucideIcons.trash2,
       iconColor: VinRColors.crimson,
     );
@@ -122,7 +182,7 @@ class _JournalScreenState extends State<JournalScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
+                // Top Header Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -132,20 +192,50 @@ class _JournalScreenState extends State<JournalScreen> {
                         children: [
                           Text('Gratitude Journal', style: VinRTypography.h1.copyWith(fontSize: 26, color: primaryTextColor)),
                           const SizedBox(height: 2),
-                          Text('What are you grateful for today?', style: VinRTypography.bodySm.copyWith(color: mutedTextColor)),
+                          Text('Voice & written daily reflections', style: VinRTypography.bodySm.copyWith(color: mutedTextColor)),
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(_isRecording ? LucideIcons.square : LucideIcons.mic, color: _isRecording ? VinRColors.crimson : activeGold),
-                      onPressed: () => setState(() => _isRecording = !_isRecording),
+
+                    // Voice Dictation Toggle Button
+                    GestureDetector(
+                      onTap: _toggleVoiceDictation,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _isDictating ? VinRColors.crimson.withValues(alpha: 0.15) : activeGold.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: _isDictating ? VinRColors.crimson : activeGold,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _isDictating ? LucideIcons.micOff : LucideIcons.mic,
+                              color: _isDictating ? VinRColors.crimson : activeGold,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _isDictating ? 'Listening...' : 'Voice Input',
+                              style: TextStyle(
+                                color: _isDictating ? VinRColors.crimson : activeGold,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
 
-                // Voice Note Recorder Bar
-                if (_isRecording) ...[
+                // Live Dictation Status Bar
+                if (_isDictating) ...[
                   GlassContainer(
                     color: VinRColors.crimsonGlow,
                     border: Border.all(color: VinRColors.crimson),
@@ -154,9 +244,9 @@ class _JournalScreenState extends State<JournalScreen> {
                       children: const [
                         Row(
                           children: [
-                            Icon(LucideIcons.mic, color: VinRColors.crimson),
+                            Icon(LucideIcons.mic, color: VinRColors.crimson, size: 20),
                             SizedBox(width: 12),
-                            Text('Recording Voice Journal...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            Text('Recording voice dictation...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         AudioWaveformVisualizer(isPlaying: true, barColor: VinRColors.crimson),
@@ -238,6 +328,56 @@ class _JournalScreenState extends State<JournalScreen> {
 
                 // WRITE MODE
                 if (_viewMode == 'write') ...[
+                  // Mood Selector Bar
+                  const SectionHeader(
+                    title: 'HOW ARE YOU FEELING RIGHT NOW?',
+                    icon: LucideIcons.heartHandshake,
+                    iconColor: VinRColors.goldLight,
+                  ),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _moodOptions.map((opt) {
+                        final isSelected = _selectedMood == opt['name'];
+                        final color = opt['color'] as Color;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: GestureDetector(
+                            onTap: () => setState(() => _selectedMood = opt['name'] as String),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: isSelected ? color.withValues(alpha: 0.18) : (isLight ? Colors.white : VinRColors.surface),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: isSelected ? color : (isLight ? const Color(0x1A000000) : VinRColors.border),
+                                  width: isSelected ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(opt['icon'] as IconData, size: 16, color: isSelected ? color : mutedTextColor),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    opt['name'] as String,
+                                    style: TextStyle(
+                                      color: isSelected ? color : primaryTextColor,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
                   const SectionHeader(
                     title: 'DAILY GRATITUDE PROMPTS',
                     icon: LucideIcons.sparkles,
@@ -253,7 +393,7 @@ class _JournalScreenState extends State<JournalScreen> {
                           controller: _g1Controller,
                           style: TextStyle(color: primaryTextColor),
                           decoration: InputDecoration(
-                            hintText: 'e.g., Morning coffee, sunshine...',
+                            hintText: 'e.g. Morning coffee, clear weather...',
                             hintStyle: TextStyle(color: mutedTextColor),
                           ),
                         ),
@@ -265,7 +405,7 @@ class _JournalScreenState extends State<JournalScreen> {
                           controller: _g2Controller,
                           style: TextStyle(color: primaryTextColor),
                           decoration: InputDecoration(
-                            hintText: 'e.g., Kept my calm in a meeting...',
+                            hintText: 'e.g. Completed morning routine...',
                             hintStyle: TextStyle(color: mutedTextColor),
                           ),
                         ),
@@ -277,7 +417,7 @@ class _JournalScreenState extends State<JournalScreen> {
                           controller: _g3Controller,
                           style: TextStyle(color: primaryTextColor),
                           decoration: InputDecoration(
-                            hintText: 'e.g., A supportive friend or colleague...',
+                            hintText: 'e.g. A supportive friend or colleague...',
                             hintStyle: TextStyle(color: mutedTextColor),
                           ),
                         ),
@@ -287,25 +427,30 @@ class _JournalScreenState extends State<JournalScreen> {
                   const SizedBox(height: 18),
 
                   const SectionHeader(
-                    title: 'PERSONAL REFLECTION',
+                    title: 'PERSONAL REFLECTION & VOICE NOTES',
                     icon: LucideIcons.fileText,
                     iconColor: VinRColors.sapphire,
                   ),
                   GlassContainer(
-                    child: TextField(
-                      controller: _reflectionController,
-                      maxLines: 4,
-                      style: TextStyle(color: primaryTextColor),
-                      decoration: InputDecoration(
-                        hintText: 'Write any thoughts, reflections, or insights on your mind...',
-                        hintStyle: TextStyle(color: mutedTextColor),
-                      ),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _reflectionController,
+                          maxLines: 4,
+                          style: TextStyle(color: primaryTextColor),
+                          decoration: InputDecoration(
+                            hintText: 'Write thoughts or tap Voice Input above to dictate your reflection...',
+                            hintStyle: TextStyle(color: mutedTextColor),
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),
 
                   GoldButton(
-                    text: 'Save Gratitude Journal Entry →',
+                    text: 'Save Gratitude Journal Entry',
                     onPressed: _saveEntry,
                   ),
                 ]
@@ -337,9 +482,9 @@ class _JournalScreenState extends State<JournalScreen> {
                           children: [
                             Icon(LucideIcons.bookOpen, size: 48, color: mutedTextColor.withValues(alpha: 0.4)),
                             const SizedBox(height: 12),
-                            Text('No Gratitude Entries Yet', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor)),
+                            Text('No Journal Entries Yet', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor)),
                             const SizedBox(height: 4),
-                            Text('Write your first daily gratitude entry to start logging your wins!', style: VinRTypography.caption.copyWith(color: mutedTextColor), textAlign: TextAlign.center),
+                            Text('Tap Voice Input or Write Entry above to log your first reflection.', style: VinRTypography.caption.copyWith(color: mutedTextColor), textAlign: TextAlign.center),
                           ],
                         ),
                       ),
@@ -367,7 +512,10 @@ class _JournalScreenState extends State<JournalScreen> {
                                           color: activeGold.withValues(alpha: 0.15),
                                           borderRadius: BorderRadius.circular(10),
                                         ),
-                                        child: const Text('Logged', style: TextStyle(color: VinRColors.emerald, fontSize: 10, fontWeight: FontWeight.bold)),
+                                        child: Text(
+                                          item['mood'] as String? ?? 'Logged',
+                                          style: const TextStyle(color: VinRColors.emerald, fontSize: 10, fontWeight: FontWeight.bold),
+                                        ),
                                       ),
                                       const SizedBox(width: 8),
                                       IconButton(

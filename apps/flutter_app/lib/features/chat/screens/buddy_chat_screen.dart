@@ -165,7 +165,15 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
       if (mounted) setState(() => _currentlyPlayingAudioId = null);
     } else {
       await _audioPlayer.stop();
-      final uri = msg.audioUri;
+      String? uri = msg.audioUri;
+      if (uri == null || uri.isEmpty) {
+        // Fetch/synthesize audio payload on-demand for local user voice messages
+        await ref.read(chatProvider.notifier).sendMessage(msg.text, isVoice: true);
+        final history = ref.read(chatProvider).messages;
+        if (history.isNotEmpty && history.last.audioUri != null) {
+          uri = history.last.audioUri;
+        }
+      }
       if (uri != null && uri.isNotEmpty) {
         try {
           await _audioPlayer.play(UrlSource(uri));
