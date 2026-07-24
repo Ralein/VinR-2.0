@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/repositories/chat_repository.dart';
 import '../models/chat_message_model.dart';
 
 class ChatState {
@@ -26,6 +27,8 @@ class ChatState {
 }
 
 class ChatNotifier extends StateNotifier<ChatState> {
+  final ChatRepository _repository = ChatRepository();
+
   ChatNotifier()
       : super(
           ChatState(
@@ -38,7 +41,29 @@ class ChatNotifier extends StateNotifier<ChatState> {
               ),
             ],
           ),
+        ) {
+    _initHistory();
+  }
+
+  Future<void> _initHistory() async {
+    final history = await _repository.getHistory();
+    if (history != null && history.isNotEmpty) {
+      final loadedMessages = history.map((item) {
+        final role = item['role'] as String? ?? 'assistant';
+        return ChatMessageModel(
+          id: item['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
+          text: item['content'] as String? ?? '',
+          sender: role == 'user' ? MessageSender.user : MessageSender.ai,
+          timestamp: DateTime.tryParse(item['created_at'] as String? ?? '') ?? DateTime.now(),
+          audioUri: item['audio_url'] as String?,
         );
+      }).toList();
+
+      if (loadedMessages.isNotEmpty) {
+        state = state.copyWith(messages: loadedMessages);
+      }
+    }
+  }
 
   void setPersona(String persona) {
     state = state.copyWith(persona: persona);
@@ -58,21 +83,47 @@ class ChatNotifier extends StateNotifier<ChatState> {
       isGenerating: true,
     );
 
-    // Simulate AI Reflection response
-    await Future.delayed(const Duration(milliseconds: 1200));
+    final personaId = state.persona.toLowerCase().contains('sage')
+        ? 'sage'
+        : state.persona.toLowerCase().contains('hope')
+            ? 'hope'
+            : 'vinr';
 
-    final aiReply = _generateAiReply(text);
-    final aiMsg = ChatMessageModel(
-      id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
-      text: aiReply,
-      sender: MessageSender.ai,
-      timestamp: DateTime.now(),
+    final response = await _repository.sendMessage(
+      text,
+      voiceEnabled: isVoice,
+      persona: personaId,
     );
 
-    state = state.copyWith(
-      messages: [...state.messages, aiMsg],
-      isGenerating: false,
-    );
+    if (response != null && response.containsKey('buddy_message')) {
+      final buddyData = response['buddy_message'] as Map<String, dynamic>;
+      final aiMsg = ChatMessageModel(
+        id: buddyData['id'] as String? ?? (DateTime.now().millisecondsSinceEpoch + 1).toString(),
+        text: buddyData['content'] as String? ?? 'I am here with you, champion!',
+        sender: MessageSender.ai,
+        timestamp: DateTime.now(),
+        audioUri: buddyData['audio_url'] as String?,
+      );
+
+      state = state.copyWith(
+        messages: [...state.messages, aiMsg],
+        isGenerating: false,
+      );
+    } else {
+      // Local fallback reply
+      final aiReply = _generateAiReply(text);
+      final aiMsg = ChatMessageModel(
+        id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
+        text: aiReply,
+        sender: MessageSender.ai,
+        timestamp: DateTime.now(),
+      );
+
+      state = state.copyWith(
+        messages: [...state.messages, aiMsg],
+        isGenerating: false,
+      );
+    }
   }
 
   String _generateAiReply(String prompt) {

@@ -28,7 +28,12 @@ app.mount("/public", StaticFiles(directory=PUBLIC_DIR), name="public")
 
 @app.on_event("startup")
 async def startup_event():
-    """Trigger background tasks on startup."""
+    """Trigger database table creation and background tasks on startup."""
+    from app.core.database import engine, Base
+    import app.models  # Ensure all models are loaded
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     # Pre-generate persona greetings in background to avoid blocking API startup
     import asyncio
     asyncio.create_task(tts_service.pregenerate_greetings())

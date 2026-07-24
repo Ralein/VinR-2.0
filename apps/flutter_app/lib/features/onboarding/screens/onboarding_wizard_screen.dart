@@ -38,7 +38,7 @@ class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardScreen>
           children: [
             Icon(LucideIcons.sparkles, color: activeGold, size: 64),
             const SizedBox(height: 24),
-            Text('Welcome to VinR 2.0', style: VinRTypography.h2.copyWith(color: primaryTextColor), textAlign: TextAlign.center),
+            Text('Welcome to VinR', style: VinRTypography.h2.copyWith(color: primaryTextColor), textAlign: TextAlign.center),
             const SizedBox(height: 12),
             Text(
               'Your personalized 21-day winning streak platform. Over the next few steps, we will customize your experience to fit your growth goals.',

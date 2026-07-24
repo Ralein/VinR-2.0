@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../theme/vinr_colors.dart';
 import '../theme/vinr_typography.dart';
+import '../widgets/app_animations.dart';
+import '../widgets/notification_banner.dart';
 
 class MainNavigationShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
@@ -33,11 +35,16 @@ class MainNavigationShell extends StatelessWidget {
     final navBarHeight = 60.0 + bottomInset;
 
     return Scaffold(
-      body: navigationShell,
+      body: Stack(
+        children: [
+          navigationShell,
+          const NotificationBannerOverlay(),
+        ],
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 2.0, right: 4.0),
-        child: GestureDetector(
+        child: AnimatedPressable(
           onTap: () => context.push('/buddy-chat'),
           child: Container(
             width: 50,
@@ -105,7 +112,7 @@ class MainNavigationShell extends StatelessWidget {
             ),
 
             // Tab 3: Center Raised Glint/Reel Button (Instagram Style)
-            GestureDetector(
+            AnimatedPressable(
               onTap: () => _onItemTapped(2),
               child: Transform.translate(
                 offset: const Offset(0, -10),
@@ -114,29 +121,34 @@ class MainNavigationShell extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: VinRColors.goldGradient,
-                          border: Border.all(
-                            color: currentIndex == 2 ? activeGold : VinRColors.borderGold,
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: activeGold.withValues(alpha: currentIndex == 2 ? 0.6 : 0.35),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
+                      AnimatedPulse(
+                        duration: const Duration(milliseconds: 1800),
+                        minScale: 0.96,
+                        maxScale: 1.04,
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: VinRColors.goldGradient,
+                            border: Border.all(
+                              color: currentIndex == 2 ? activeGold : VinRColors.borderGold,
+                              width: 2,
                             ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            LucideIcons.film,
-                            color: Colors.white,
-                            size: 22,
+                            boxShadow: [
+                              BoxShadow(
+                                color: activeGold.withValues(alpha: currentIndex == 2 ? 0.6 : 0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              LucideIcons.film,
+                              color: Colors.white,
+                              size: 22,
+                            ),
                           ),
                         ),
                       ),
@@ -194,19 +206,23 @@ class MainNavigationShell extends StatelessWidget {
     final isSelected = index == currentIndex;
 
     return Expanded(
-      child: GestureDetector(
+      child: AnimatedPressable(
         onTap: onTap,
-        behavior: HitTestBehavior.opaque,
         child: FittedBox(
           fit: BoxFit.scaleDown,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: isSelected ? activeColor : inactiveColor,
+              AnimatedScale(
+                scale: isSelected ? 1.15 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: isSelected ? activeColor : inactiveColor,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
@@ -218,17 +234,16 @@ class MainNavigationShell extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              if (isSelected)
-                Container(
-                  width: 14,
-                  height: 2.5,
-                  decoration: BoxDecoration(
-                    color: activeColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                )
-              else
-                const SizedBox(height: 2.5),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                width: isSelected ? 14 : 0,
+                height: 2.5,
+                decoration: BoxDecoration(
+                  color: activeColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             ],
           ),
         ),

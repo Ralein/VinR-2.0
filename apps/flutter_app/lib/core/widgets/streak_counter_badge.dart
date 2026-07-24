@@ -35,11 +35,14 @@ class StreakCounterBadge extends StatelessWidget {
             size: 18,
           ),
           const SizedBox(width: 6),
-          Text(
-            '$streakDays/21 DAYS WINNER',
-            style: VinRTypography.label.copyWith(
-              color: goldCol,
-              fontWeight: FontWeight.bold,
+          Flexible(
+            child: Text(
+              '$streakDays/21 DAYS WINNER',
+              style: VinRTypography.label.copyWith(
+                color: goldCol,
+                fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

@@ -689,8 +689,8 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
                       Expanded(
                         child: Text(
                           _isLocked
-                              ? 'Hands-free locked 🔒'
-                              : (_dragY < -25 ? 'Release to lock 🔒' : 'Swipe up to lock ↑'),
+                              ? 'Hands-free locked'
+                              : (_dragY < -25 ? 'Release to lock' : 'Swipe up to lock'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: (_isLocked || _dragY < -25) ? activeGold : mutedTextColor,

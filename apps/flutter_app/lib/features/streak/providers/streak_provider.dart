@@ -1,7 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/repositories/streak_repository.dart';
 import '../models/streak_model.dart';
 
 class StreakNotifier extends StateNotifier<StreakStateModel> {
+  final StreakRepository _repository = StreakRepository();
+  String? _activeStreakId;
+
   StreakNotifier()
       : super(
           StreakStateModel(
@@ -13,9 +17,32 @@ class StreakNotifier extends StateNotifier<StreakStateModel> {
             isWinner: false,
             dailyCompletions: const [],
           ),
-        );
+        ) {
+    _initStreak();
+  }
 
-  void markDayComplete({String? note, double? mood}) {
+  Future<void> _initStreak() async {
+    final streakData = await _repository.getActiveStreak();
+    if (streakData != null) {
+      _activeStreakId = streakData['id'] as String?;
+      final current = streakData['current_streak'] as int? ?? 0;
+      final longest = streakData['longest_streak'] as int? ?? 0;
+      final global = streakData['global_streak'] as int? ?? current;
+      final total = streakData['total_days_completed'] as int? ?? current;
+      final isDone = streakData['is_completed_today'] as bool? ?? false;
+
+      state = state.copyWith(
+        currentStreak: current,
+        longestStreak: longest,
+        globalStreak: global,
+        totalDaysCompleted: total,
+        isCompletedToday: isDone,
+        isWinner: total >= 21,
+      );
+    }
+  }
+
+  Future<void> markDayComplete({String? note, double? mood}) async {
     final nextDay = state.totalDaysCompleted + 1;
     final completion = DailyCompletion(
       id: 'cmp_${DateTime.now().millisecondsSinceEpoch}',
@@ -36,6 +63,14 @@ class StreakNotifier extends StateNotifier<StreakStateModel> {
       isCompletedToday: true,
       isWinner: isWinner,
     );
+
+    if (_activeStreakId != null) {
+      await _repository.completeDay(
+        _activeStreakId!,
+        reflectionNote: note,
+        moodRating: mood?.toInt(),
+      );
+    }
   }
 
   void checkInToday() {

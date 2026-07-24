@@ -2,8 +2,7 @@
 
 import uuid
 from datetime import datetime, date
-from sqlalchemy import String, DateTime, Date, Text, Integer, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import String, DateTime, Date, Text, Integer, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
@@ -11,8 +10,8 @@ from app.core.database import Base
 class JournalEntry(Base):
     __tablename__ = "journal_entries"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    id: Mapped[str] = mapped_column(
+        String(255), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     user_id: Mapped[str] = mapped_column(
         String(255), ForeignKey("users.id", ondelete="CASCADE"),
@@ -21,7 +20,7 @@ class JournalEntry(Base):
     date: Mapped[date] = mapped_column(Date, default=date.today, index=True)
 
     # Gratitude items — array of strings
-    gratitude_items: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    gratitude_items: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
 
     # Free reflection
     reflection_text: Mapped[str | None] = mapped_column(Text, nullable=True)

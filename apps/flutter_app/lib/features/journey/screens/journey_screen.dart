@@ -89,7 +89,7 @@ class JourneyScreen extends ConsumerWidget {
                       const SizedBox(height: 16),
                       if (!streak.isCompletedToday)
                         GoldButton(
-                          text: 'Mark Today Complete ✓',
+                          text: 'Mark Today Complete',
                           onPressed: () {
                             notifier.markDayComplete();
                             VinRToast.show(

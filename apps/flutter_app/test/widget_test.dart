@@ -5,7 +5,7 @@ import 'package:vinr_app/main.dart';
 void main() {
   testWidgets('VinR App Smoke Test', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: VinRApp()));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 600));
 
     expect(find.textContaining('VinR'), findsAtLeastNWidgets(1));
   });

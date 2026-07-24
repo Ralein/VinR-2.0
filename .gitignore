@@ -1,0 +1,20 @@
+# APK binaries
+*.apk
+*.aab
+
+# Local Database & Virtual Environment
+*.db
+*.sqlite
+*.sqlite3
+venv/
+.venv/
+.env
+
+# Build outputs
+build/
+.dart_tool/
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+*.pyo

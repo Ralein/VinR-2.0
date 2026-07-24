@@ -95,70 +95,81 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen>
                       onPressed: () => context.pop(),
                     ),
                     const SizedBox(width: 8),
-                    Text('4-7-8 Breathing Exercise', style: VinRTypography.h3.copyWith(color: primaryTextColor)),
+                    Expanded(
+                      child: Text(
+                        '4-7-8 Breathing Exercise',
+                        style: VinRTypography.h3.copyWith(color: primaryTextColor),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ),
 
               Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(_phase, style: VinRTypography.h1.copyWith(color: VinRColors.emerald, fontSize: 28)),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        _isRunning ? 'Follow the expanding and contracting aura' : 'Tap start to begin calming sequence',
-                        style: VinRTypography.bodySm.copyWith(color: mutedTextColor),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(height: 48),
-                    Center(
-                      child: AnimatedBuilder(
-                        animation: _animController,
-                        builder: (context, child) {
-                          final scale = 1.0 + (_animController.value * 0.4);
-                          return Container(
-                            width: 180 * scale,
-                            height: 180 * scale,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: VinRColors.emeraldGlow,
-                              border: Border.all(
-                                color: VinRColors.emerald.withValues(alpha: 0.6),
-                                width: 3,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: VinRColors.emerald.withValues(alpha: 0.3 * _animController.value),
-                                  blurRadius: 30 * scale,
-                                  spreadRadius: 8,
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(_phase, style: VinRTypography.h1.copyWith(color: VinRColors.emerald, fontSize: 28)),
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            _isRunning ? 'Follow the expanding and contracting aura' : 'Tap start to begin calming sequence',
+                            style: VinRTypography.bodySm.copyWith(color: mutedTextColor),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: 36),
+                        Center(
+                          child: AnimatedBuilder(
+                            animation: _animController,
+                            builder: (context, child) {
+                              final scale = 1.0 + (_animController.value * 0.4);
+                              return Container(
+                                width: 180 * scale,
+                                height: 180 * scale,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: VinRColors.emeraldGlow,
+                                  border: Border.all(
+                                    color: VinRColors.emerald.withValues(alpha: 0.6),
+                                    width: 3,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: VinRColors.emerald.withValues(alpha: 0.3 * _animController.value),
+                                      blurRadius: 30 * scale,
+                                      spreadRadius: 8,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: const Center(
-                              child: Icon(LucideIcons.wind, color: VinRColors.emerald, size: 56),
-                            ),
-                          );
-                        },
-                      ),
+                                child: const Center(
+                                  child: Icon(LucideIcons.wind, color: VinRColors.emerald, size: 56),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 36),
+                        ElevatedButton.icon(
+                          onPressed: _toggleExercise,
+                          icon: Icon(_isRunning ? LucideIcons.pause : LucideIcons.play),
+                          label: Text(_isRunning ? 'Pause Session' : 'Start 4-7-8 Session'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: VinRColors.emerald,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                            elevation: 4,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 56),
-                    ElevatedButton.icon(
-                      onPressed: _toggleExercise,
-                      icon: Icon(_isRunning ? LucideIcons.pause : LucideIcons.play),
-                      label: Text(_isRunning ? 'Pause Session' : 'Start 4-7-8 Session'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: VinRColors.emerald,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                        elevation: 4,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],

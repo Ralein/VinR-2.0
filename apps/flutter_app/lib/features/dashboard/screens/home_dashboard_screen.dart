@@ -12,6 +12,7 @@ import '../../../core/widgets/streak_hero.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/gold_button.dart';
 import '../../../core/widgets/vinr_toast.dart';
+import '../../../core/widgets/app_animations.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../streak/providers/streak_provider.dart';
 
@@ -137,10 +138,13 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                 const SizedBox(height: 20),
 
                 // Streak Hero Component (Dynamic Connection)
-                GlassContainer(
-                  child: StreakHero(
-                    streak: streak.currentStreak,
-                    todayDone: streak.isCompletedToday,
+                FadeSlideTransition(
+                  duration: const Duration(milliseconds: 600),
+                  child: GlassContainer(
+                    child: StreakHero(
+                      streak: streak.currentStreak,
+                      todayDone: streak.isCompletedToday,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -256,6 +260,14 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                       icon: LucideIcons.activity,
                       color: VinRColors.emerald,
                       onTap: () => context.push('/yoga'),
+                    ),
+                    _buildToolCard(
+                      context,
+                      title: 'Strength Workout',
+                      subtitle: 'Bodyweight routines',
+                      icon: LucideIcons.dumbbell,
+                      color: VinRColors.crimson,
+                      onTap: () => context.push('/workout'),
                     ),
                     _buildToolCard(
                       context,

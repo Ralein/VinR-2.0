@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     API_V1_PREFIX: str = "/api/v1"
 
-    # Database (Neon PostgreSQL)
-    DATABASE_URL: str = "postgresql+asyncpg://user:pass@ep-xyz.us-east-2.aws.neon.tech/vinr_db?sslmode=require"
+    # Database (Local SQLite for zero-deployment / PostgreSQL support)
+    DATABASE_URL: str = "sqlite+aiosqlite:///./vinr_local.db"
     DATABASE_ECHO: bool = False
 
     # Redis

@@ -18,6 +18,7 @@ import '../../features/chat/screens/buddy_chat_screen.dart';
 import '../../features/exercises/screens/breathing_exercise_screen.dart';
 import '../../features/exercises/screens/grounding_exercise_screen.dart';
 import '../../features/exercises/screens/yoga_movement_screen.dart';
+import '../../features/exercises/screens/workout_screen.dart';
 import '../../features/therapist/screens/therapist_directory_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import 'main_navigation_shell.dart';
@@ -129,6 +130,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/yoga',
         builder: (context, state) => const YogaMovementScreen(),
+      ),
+      GoRoute(
+        path: '/workout',
+        builder: (context, state) => const WorkoutScreen(),
+      ),
+      GoRoute(
+        path: '/workouts',
+        builder: (context, state) => const WorkoutScreen(),
       ),
       GoRoute(
         path: '/therapist',

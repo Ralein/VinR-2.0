@@ -1,5 +1,6 @@
 """Async SQLAlchemy database engine and session management."""
 
+from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -10,12 +11,21 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+is_sqlite = settings.DATABASE_URL.startswith("sqlite")
+
+engine_kwargs = {"echo": settings.DATABASE_ECHO}
+if is_sqlite:
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    engine_kwargs.update({
+        "pool_size": 20,
+        "max_overflow": 10,
+        "pool_pre_ping": True,
+    })
+
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=settings.DATABASE_ECHO,
-    pool_size=20,
-    max_overflow=10,
-    pool_pre_ping=True,
+    **engine_kwargs,
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -29,8 +39,6 @@ class Base(DeclarativeBase):
     """Base class for all ORM models."""
     pass
 
-
-from collections.abc import AsyncGenerator
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency that yields an async database session."""

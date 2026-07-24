@@ -59,7 +59,7 @@ class _GroundingExerciseScreenState extends State<GroundingExerciseScreen> {
     return Scaffold(
       body: AmbientBackground(
         child: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Column(
               children: [
@@ -71,7 +71,13 @@ class _GroundingExerciseScreenState extends State<GroundingExerciseScreen> {
                       onPressed: () => context.pop(),
                     ),
                     const SizedBox(width: 8),
-                    Text('5-4-3-2-1 Grounding', style: VinRTypography.h3.copyWith(color: primaryTextColor)),
+                    Expanded(
+                      child: Text(
+                        '5-4-3-2-1 Grounding',
+                        style: VinRTypography.h3.copyWith(color: primaryTextColor),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -81,7 +87,7 @@ class _GroundingExerciseScreenState extends State<GroundingExerciseScreen> {
                   backgroundColor: context.borderColor,
                   valueColor: AlwaysStoppedAnimation<Color>(stepInfo['color'] as Color),
                 ),
-                const Spacer(),
+                const SizedBox(height: 32),
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -106,7 +112,7 @@ class _GroundingExerciseScreenState extends State<GroundingExerciseScreen> {
                     style: VinRTypography.body.copyWith(color: primaryTextColor, height: 1.45),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(height: 32),
                 GoldButton(
                   text: _currentStep == 1 ? 'Complete Grounding' : 'Next Step (${_currentStep - 1} Left)',
                   onPressed: () {

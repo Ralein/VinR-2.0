@@ -238,30 +238,40 @@ class SettingsScreen extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: const BoxDecoration(
-                                color: VinRColors.emeraldGlow,
-                                shape: BoxShape.circle,
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: const BoxDecoration(
+                                  color: VinRColors.emeraldGlow,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(LucideIcons.bell, color: VinRColors.emerald),
                               ),
-                              child: const Icon(LucideIcons.bell, color: VinRColors.emerald),
-                            ),
-                            const SizedBox(width: 14),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Daily Streak Reminder', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: context.textColor)),
-                                Text('Receive daily check-in nudge', style: VinRTypography.caption.copyWith(color: context.textMutedColor)),
-                              ],
-                            ),
-                          ],
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Daily Streak Reminder', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: context.textColor), overflow: TextOverflow.ellipsis),
+                                    Text('Receive daily check-in nudge', style: VinRTypography.caption.copyWith(color: context.textMutedColor), overflow: TextOverflow.ellipsis),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Switch(
                           value: reminderState.isEnabled,
                           onChanged: (val) {
                             reminderNotifier.toggleReminder(val);
+                            if (val) {
+                              ref.read(notificationServiceProvider.notifier).scheduleDailyStreakReminder(reminderState.reminderTime, triggerImmediately: false);
+                            } else {
+                              ref.read(notificationServiceProvider.notifier).cancelReminders();
+                            }
                             VinRToast.show(
                               context,
                               message: val ? 'Daily streak reminder activated' : 'Reminders paused',
@@ -279,18 +289,32 @@ class SettingsScreen extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text('Reminder Time', style: TextStyle(color: context.textColor, fontWeight: FontWeight.w600)),
-                          Wrap(
-                            spacing: 6,
-                            children: ['08:00 AM', '01:00 PM', '08:00 PM'].map((t) {
-                              final isSel = reminderState.reminderTime == t;
-                              return ChoiceChip(
-                                selected: isSel,
-                                label: Text(t, style: TextStyle(color: isSel ? Colors.black : context.textColor, fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
-                                selectedColor: context.goldColor,
-                                backgroundColor: context.surfaceColor,
-                                onSelected: (_) => reminderNotifier.setReminderTime(t),
-                              );
-                            }).toList(),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: ['08:00 AM', '01:00 PM', '08:00 PM'].map((t) {
+                                    final isSel = reminderState.reminderTime == t;
+                                    return Padding(
+                                      padding: const EdgeInsets.only(left: 6),
+                                      child: ChoiceChip(
+                                        selected: isSel,
+                                        label: Text(t, style: TextStyle(color: isSel ? Colors.black : context.textColor, fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
+                                        selectedColor: context.goldColor,
+                                        backgroundColor: context.surfaceColor,
+                                        onSelected: (_) {
+                                          reminderNotifier.setReminderTime(t);
+                                          ref.read(notificationServiceProvider.notifier).scheduleDailyStreakReminder(t, triggerImmediately: false);
+                                        },
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -300,10 +324,10 @@ class SettingsScreen extends ConsumerWidget {
                         label: const Text('Test Live Notification Alert', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                         onPressed: () {
                           reminderNotifier.recordNotificationSent();
-                          ref.read(notificationServiceProvider.notifier).scheduleDailyStreakReminder(reminderState.reminderTime);
+                          ref.read(notificationServiceProvider.notifier).scheduleDailyStreakReminder(reminderState.reminderTime, triggerImmediately: true);
                           VinRToast.show(
                             context,
-                            message: 'Streak Reminder scheduled for ${reminderState.reminderTime}! Live notification queued.',
+                            message: 'Streak Reminder alert scheduled! Top banner queued.',
                             icon: LucideIcons.bellRing,
                             iconColor: VinRColors.gold,
                           );
