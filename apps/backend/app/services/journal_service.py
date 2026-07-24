@@ -1,4 +1,4 @@
-"""Journal Service — AI reflections and weekly insights via Groq."""
+"""Journal Service — AI reflections and weekly insights via 9Router (free models)."""
 
 from datetime import date, timedelta
 import openai
@@ -6,7 +6,19 @@ from openai import AsyncOpenAI
 from app.core.config import get_settings
 
 settings = get_settings()
-client = AsyncOpenAI(api_key=settings.GROQ_API_KEY, base_url="https://api.groq.com/openai/v1") if settings.GROQ_API_KEY else None
+
+# Lazy 9Router client
+_client: AsyncOpenAI | None = None
+
+
+def _get_client() -> AsyncOpenAI:
+    global _client
+    if _client is None:
+        _client = AsyncOpenAI(
+            api_key=settings.NINE_ROUTER_API_KEY,
+            base_url=settings.NINE_ROUTER_URL,
+        )
+    return _client
 
 
 async def generate_journal_reflection(
@@ -44,11 +56,9 @@ Rules:
 - Write in second person ("you")"""
 
     try:
-        if not client:
-            raise ValueError("GROQ_API_KEY not configured")
-        
+        client = _get_client()
         response = await client.chat.completions.create(
-            model=settings.GROQ_MODEL,
+            model=settings.NINE_ROUTER_MODEL,
             max_tokens=200,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -95,11 +105,9 @@ Rules:
 - Be encouraging but honest"""
 
     try:
-        if not client:
-            raise ValueError("GROQ_API_KEY not configured")
-        
+        client = _get_client()
         response = await client.chat.completions.create(
-            model=settings.GROQ_MODEL,
+            model=settings.NINE_ROUTER_MODEL,
             max_tokens=250,
             messages=[{"role": "user", "content": prompt}],
         )

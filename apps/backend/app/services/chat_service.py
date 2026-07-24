@@ -70,13 +70,12 @@ _client: AsyncOpenAI | None = None
 
 
 def _get_client() -> AsyncOpenAI:
+    """Get or create cached OpenAI client pointed at 9Router local endpoint."""
     global _client
     if _client is None:
-        if not settings.GROQ_API_KEY:
-            raise ValueError("GROQ_API_KEY is not set.")
         _client = AsyncOpenAI(
-            api_key=settings.GROQ_API_KEY,
-            base_url="https://api.groq.com/openai/v1",
+            api_key=settings.NINE_ROUTER_API_KEY,
+            base_url=settings.NINE_ROUTER_URL,
         )
     return _client
 
@@ -207,7 +206,7 @@ async def generate_buddy_response(
         # 5. Call Groq
         client = _get_client()
         response = await client.chat.completions.create(
-            model=settings.GROQ_MODEL or "llama3-8b-8192",
+            model=settings.NINE_ROUTER_MODEL,
             max_tokens=512,
             temperature=0.8,
             messages=llm_messages,
