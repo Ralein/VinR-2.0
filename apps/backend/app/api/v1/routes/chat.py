@@ -72,12 +72,14 @@ async def send_message(
         db, user_id, clean_text, persona=request.persona
     )
 
-    # Optional: generate voice
+    # Synthesize Kokoro ONNX TTS voice audio
     audio_url = None
-    if is_voice:
+    try:
         audio_bytes = await text_to_speech(buddy_text, persona=request.persona)
         if audio_bytes:
             audio_url = audio_bytes_to_data_uri(audio_bytes)
+    except Exception as e:
+        print(f"⚠️ Kokoro synthesis warning: {e}")
 
     # Save buddy message to memory (not DB)
     buddy_msg = memory_save_message(

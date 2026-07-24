@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
@@ -75,9 +76,18 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
     'Night wind-down reflection',
   ];
 
+  late final AudioPlayer _audioPlayer;
+
   @override
   void initState() {
     super.initState();
+    _audioPlayer = AudioPlayer();
+    _audioPlayer.onPlayerComplete.listen((_) {
+      if (mounted) {
+        setState(() => _currentlyPlayingAudioId = null);
+      }
+    });
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -93,6 +103,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
     _scrollController.dispose();
     _recordingTimer?.cancel();
     _pulseController.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -143,16 +154,33 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
       _recordingSeconds = 0;
       _dragX = 0;
       _dragY = 0;
-      _touchStartPosition = null;
     });
 
     _scrollToBottom();
   }
 
+  Future<void> _toggleAudioPlayback(ChatMessageModel msg) async {
+    if (_currentlyPlayingAudioId == msg.id) {
+      await _audioPlayer.stop();
+      if (mounted) setState(() => _currentlyPlayingAudioId = null);
+    } else {
+      await _audioPlayer.stop();
+      final uri = msg.audioUri;
+      if (uri != null && uri.isNotEmpty) {
+        try {
+          await _audioPlayer.play(UrlSource(uri));
+          if (mounted) setState(() => _currentlyPlayingAudioId = msg.id);
+        } catch (e) {
+          debugPrint('Audio playback error: $e');
+        }
+      }
+    }
+  }
+
   void _send([String? textOverride]) {
     final text = textOverride ?? _messageController.text.trim();
     if (text.isNotEmpty) {
-      ref.read(chatProvider.notifier).sendMessage(text);
+      ref.read(chatProvider.notifier).sendMessage(text, isVoice: _voiceModeEnabled);
       _messageController.clear();
       setState(() => _replyingTo = null);
       _scrollToBottom();
@@ -512,18 +540,10 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
                                     ),
 
                                     // Voice Playback Pill (React Native parity)
-                                    if (msg.isVoice) ...[
+                                    if (msg.isVoice || (msg.audioUri != null && msg.audioUri!.isNotEmpty)) ...[
                                       const SizedBox(height: 8),
                                       GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            if (isPlayingThis) {
-                                              _currentlyPlayingAudioId = null;
-                                            } else {
-                                              _currentlyPlayingAudioId = msg.id;
-                                            }
-                                          });
-                                        },
+                                        onTap: () => _toggleAudioPlayback(msg),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                           decoration: BoxDecoration(

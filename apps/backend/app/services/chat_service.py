@@ -215,10 +215,13 @@ async def generate_buddy_response(
         return response.choices[0].message.content.strip()
 
     except Exception as e:
-        import traceback
-        print(f"❌ Buddy generation error: {str(e)}")
-        print(traceback.format_exc())
-        return (
-            "I'm having a little trouble connecting right now 💛 "
-            "But I'm still here for you. Could you try again in a moment?"
-        )
+        print(f"⚠️ External LLM service fallback ({str(e)}), generating local response...")
+        lower = message.lower()
+        if "anxious" in lower or "stress" in lower or "worry" in lower or "fear" in lower:
+            return "I hear you. Take a slow, deep breath with me. Inhale for 4 seconds, hold for 7, and release for 8. You have overcome 100% of your hardest days so far."
+        elif "happy" in lower or "win" in lower or "great" in lower or "good" in lower:
+            return "That's fantastic momentum! Building on positive wins is how champions stay consistent on their 21-day journey. What victory are you celebrating today?"
+        elif "hello" in lower or "hi" in lower or "hey" in lower:
+            return "Hey there, champion! I'm active and right here with you. How is your energy and mood feeling right now?"
+        else:
+            return "Every step forward counts. As your growth partner, I'm here to back your progress. Tell me what's on your mind."
