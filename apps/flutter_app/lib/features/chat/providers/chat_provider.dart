@@ -83,11 +83,12 @@ class ChatNotifier extends StateNotifier<ChatState> {
       isGenerating: true,
     );
 
-    final personaId = state.persona.toLowerCase().contains('sage')
-        ? 'sage'
-        : state.persona.toLowerCase().contains('hope')
-            ? 'hope'
-            : 'vinr';
+    final lowerP = state.persona.toLowerCase();
+    final personaId = (lowerP.contains('listener') || lowerP.contains('hope'))
+        ? 'listener'
+        : (lowerP.contains('stoic') || lowerP.contains('sage'))
+            ? 'stoic'
+            : 'coach';
 
     final response = await _repository.sendMessage(
       text,

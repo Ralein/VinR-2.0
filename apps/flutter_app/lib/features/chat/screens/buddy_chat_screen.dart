@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
@@ -85,6 +86,9 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   late final AudioPlayer _audioPlayer;
+  late final stt.SpeechToText _speechToText;
+  bool _sttAvailable = false;
+  String _recognizedText = '';
 
   // Voice recording states
   bool _isRecording = false;
@@ -108,6 +112,9 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
   void initState() {
     super.initState();
     _audioPlayer = AudioPlayer();
+    _speechToText = stt.SpeechToText();
+    _initStt();
+
     _audioPlayer.onPlayerComplete.listen((_) {
       if (mounted) setState(() => _currentlyPlayingAudioId = null);
     });
@@ -120,8 +127,21 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
     );
   }
 
+  Future<void> _initStt() async {
+    try {
+      final available = await _speechToText.initialize(
+        onStatus: (status) => debugPrint('STT status: $status'),
+        onError: (e) => debugPrint('STT error: $e'),
+      );
+      if (mounted) setState(() => _sttAvailable = available);
+    } catch (e) {
+      debugPrint('STT init error: $e');
+    }
+  }
+
   @override
   void dispose() {
+    _speechToText.stop();
     _messageController.dispose();
     _scrollController.dispose();
     _recordingTimer?.cancel();
@@ -132,7 +152,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
 
   // ── Voice Recording Gesture Handlers ───────
 
-  void _startRecordingGesture() {
+  void _startRecordingGesture() async {
     HapticFeedback.mediumImpact();
     setState(() {
       _isRecording = true;
@@ -140,16 +160,40 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
       _recordingSeconds = 0;
       _dragX = 0;
       _dragY = 0;
+      _recognizedText = '';
     });
+
+    if (_sttAvailable) {
+      await _speechToText.listen(
+        onResult: (result) {
+          if (mounted) {
+            setState(() {
+              _recognizedText = result.recognizedWords;
+              if (result.recognizedWords.isNotEmpty) {
+                _messageController.text = result.recognizedWords;
+              }
+            });
+          }
+        },
+        listenOptions: stt.SpeechListenOptions(
+          listenFor: const Duration(seconds: 60),
+          pauseFor: const Duration(seconds: 10),
+        ),
+      );
+    }
+
     _recordingTimer?.cancel();
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _recordingSeconds++);
     });
   }
 
-  void _cancelRecordingGesture() {
+  void _cancelRecordingGesture() async {
     HapticFeedback.lightImpact();
     _recordingTimer?.cancel();
+    if (_speechToText.isListening) {
+      await _speechToText.stop();
+    }
     setState(() {
       _isRecording = false;
       _isLocked = false;
@@ -157,23 +201,36 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
       _dragX = 0;
       _dragY = 0;
       _touchStartPosition = null;
+      _recognizedText = '';
     });
   }
 
-  void _stopAndSendRecording() {
+  void _stopAndSendRecording() async {
     HapticFeedback.heavyImpact();
     _recordingTimer?.cancel();
-    final sec = _recordingSeconds > 0 ? _recordingSeconds : 1;
+    if (_speechToText.isListening) {
+      await _speechToText.stop();
+    }
+
+    final spokenText = _recognizedText.trim().isNotEmpty
+        ? _recognizedText.trim()
+        : _messageController.text.trim();
+
+    final finalText = spokenText.isNotEmpty ? spokenText : 'Voice reflection (${_recordingSeconds > 0 ? _recordingSeconds : 1}s)';
+
     ref.read(chatProvider.notifier).sendMessage(
-          'Voice reflection (${sec}s)',
+          finalText,
           isVoice: true,
         );
+
+    _messageController.clear();
     setState(() {
       _isRecording = false;
       _isLocked = false;
       _recordingSeconds = 0;
       _dragX = 0;
       _dragY = 0;
+      _recognizedText = '';
     });
     _scrollToBottom();
   }
@@ -188,8 +245,10 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
       await _audioPlayer.stop();
       String? uri = msg.audioUri;
       if (uri == null || uri.isEmpty) {
+        final chatState = ref.read(chatProvider);
+        final personaObj = _resolvePersona(chatState.persona);
         final repository = ChatRepository();
-        uri = await repository.generateTts(msg.text, persona: 'vinr');
+        uri = await repository.generateTts(msg.text, persona: personaObj.id);
       }
       if (uri != null && uri.isNotEmpty) {
         try {
@@ -838,8 +897,9 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
     bool isLight,
   ) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

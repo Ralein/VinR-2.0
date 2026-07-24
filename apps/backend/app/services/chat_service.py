@@ -59,10 +59,12 @@ Respond in 2-4 sentences max. Prioritise momentum, accountability, and action.""
 # Map from persona ID to prompt
 PERSONA_PROMPTS = {
     "hope": HOPE_PROMPT,
+    "listener": HOPE_PROMPT,
     "vinr": VINR_PROMPT,
-    "sage": SAGE_PROMPT,
-    "therapist": THERAPIST_PROMPT,
     "coach": COACH_PROMPT,
+    "sage": SAGE_PROMPT,
+    "stoic": SAGE_PROMPT,
+    "therapist": THERAPIST_PROMPT,
 }
 
 
@@ -231,43 +233,52 @@ async def generate_buddy_response(
         return reply
 
     except Exception as e:
-        print(f"⚠️ LLM service error ({str(e)}), using enhanced local fallback...")
+        print(f"⚠️ LLM service error ({str(e)}), using persona-aware dynamic fallback...")
         lower = message.lower()
+        norm_p = (persona or "coach").lower()
 
-        # Richer keyword-driven fallback responses
-        if any(w in lower for w in ["anxious", "anxiety", "stress", "stressed", "worry", "fear", "panic"]):
+        # Persona prefix styles
+        if "listener" in norm_p or "hope" in norm_p:
+            prefix = "Gentle Listener here: "
+            tone = "I hear you deeply regarding"
+        elif "stoic" in norm_p or "sage" in norm_p:
+            prefix = "Stoic Mentor: "
+            tone = "Consider this perspective on"
+        else:
+            prefix = "VinR Coach: "
+            tone = "Let's focus on"
+
+        # Topic matching
+        if any(w in lower for w in ["anxious", "anxiety", "stress", "stressed", "worry", "fear"]):
             return (
-                "I hear you — anxiety can feel overwhelming, but you\'re not alone in this. "
-                "Take a slow breath with me: inhale for 4 counts, hold for 4, exhale for 6. "
-                "You have navigated 100% of your hardest days so far. What\'s one small thing that feels manageable right now?"
+                f"{prefix} {tone} feeling anxious about '{message}'. "
+                "Take a slow breath with me: inhale for 4 seconds, hold for 4, release for 6. "
+                "You have navigated 100% of your hardest days so far. What's one small step that feels manageable right now?"
             )
-        elif any(w in lower for w in ["sad", "depress", "low", "empty", "hopeless", "unmotivated"]):
+        elif any(w in lower for w in ["birthday", "celebrat", "party", "anniversary"]):
             return (
-                "What you\'re feeling is real and valid — it\'s okay to sit with it for a moment. "
-                "Sometimes the smallest step forward is the most powerful one. "
-                "Is there one tiny thing that might bring even a flicker of comfort right now?"
+                f"{prefix} Happy Birthday! 🎉 {tone} celebrating your special day! "
+                "Taking a moment to honor your growth and journey is a huge win. "
+                "How are you treating yourself today, champion?"
             )
-        elif any(w in lower for w in ["happy", "excited", "great", "amazing", "win", "proud", "achieved"]):
+        elif any(w in lower for w in ["happy", "excited", "great", "amazing", "win", "proud", "good"]):
             return (
-                "That\'s real momentum — I love hearing that! "
-                "Celebrating wins, big or small, is how consistency compounds into transformation. "
-                "What made today feel like a victory?"
+                f"{prefix} That's real momentum! {tone} your positive energy with '{message}'. "
+                "Building on positive wins is how champions stay consistent. What's your next focus today?"
             )
-        elif any(w in lower for w in ["sleep", "tired", "exhausted", "insomnia", "rest"]):
+        elif any(w in lower for w in ["wind", "night", "reflection", "sleep", "rest", "tired"]):
             return (
-                "Rest is not laziness — it\'s recovery, and recovery is where growth actually happens. "
-                "Try the 4-7-8 technique tonight: inhale 4s, hold 7s, exhale 8s. "
-                "Is there anything specific keeping you from sleeping well?"
-            )
-        elif any(w in lower for w in ["hello", "hi", "hey", "start", "begin"]):
-            return (
-                "Hey there! I\'m right here with you. "
-                "How\'s your energy and mood feeling today? "
-                "Whether you want to reflect, vent, or just talk — I\'m all in."
+                f"{prefix} Time to wind down. {tone} resting after a full day. "
+                "Try the 4-7-8 technique: inhale 4s, hold 7s, exhale 8s. "
+                "Let go of today's noise — tomorrow is a fresh canvas."
             )
         else:
+            # Dynamic reflective response acknowledging user input directly
+            clean_msg = message.strip()
+            if len(clean_msg) > 60:
+                clean_msg = clean_msg[:57] + "..."
             return (
-                "I\'m here and fully listening. "
-                "Every moment you show up for yourself — even just by reaching out — is progress. "
-                "Tell me more about what\'s on your mind."
+                f"{prefix} {tone} '{clean_msg}'. "
+                "Every moment you take to reflect and communicate is progress. "
+                "Tell me a bit more about what you'd like to achieve or unpack here."
             )

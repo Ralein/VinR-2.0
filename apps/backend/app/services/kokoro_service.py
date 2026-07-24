@@ -25,14 +25,15 @@ os.makedirs(STATIC_GREETINGS_DIR, exist_ok=True)
 MODEL_PATH = os.path.join(KOKORO_DIR, "kokoro-v1.0.onnx")
 VOICES_PATH = os.path.join(KOKORO_DIR, "voices-v1.0.bin")
 
-# ── Voice Mapping ───────────────────────────────────────────────────
 # Default Kokoro voices (af = adult female, am = adult male)
 PERSONA_VOICE_MAP = {
-    "vinr": "af_heart",
-    "hope": "af_bella",
-    "sage": "am_adam",
-    "therapist": "af_sarah",
-    "coach": "am_michael",
+    "vinr": "am_michael",      # VinR Coach — energetic male coach
+    "coach": "am_michael",     # VinR Coach — energetic male coach
+    "listener": "af_bella",    # Gentle Listener — warm soothing female
+    "hope": "af_bella",        # Gentle Listener — warm soothing female
+    "stoic": "am_adam",        # Stoic Mentor — deep calm male
+    "sage": "am_adam",         # Stoic Mentor — deep calm male
+    "therapist": "af_sarah",   # Dr. Aris — clinical female doctor
 }
 
 class KokoroService:
