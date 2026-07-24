@@ -43,4 +43,22 @@ class ChatRepository {
     }
     return null;
   }
+
+  Future<String?> generateTts(String text, {String persona = 'vinr'}) async {
+    try {
+      final response = await _apiService.dio.post(
+        'chat/tts',
+        data: {
+          'text': text,
+          'persona': persona,
+        },
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        return response.data['audio_url'] as String?;
+      }
+    } catch (e) {
+      debugPrint('ChatRepository generateTts error: $e');
+    }
+    return null;
+  }
 }

@@ -13,6 +13,7 @@ import '../../../core/widgets/audio_waveform_visualizer.dart';
 import '../../../core/widgets/vinr_toast.dart';
 import '../models/chat_message_model.dart';
 import '../providers/chat_provider.dart';
+import '../../../core/repositories/chat_repository.dart';
 
 class BuddyChatScreen extends ConsumerStatefulWidget {
   const BuddyChatScreen({super.key});
@@ -167,12 +168,9 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
       await _audioPlayer.stop();
       String? uri = msg.audioUri;
       if (uri == null || uri.isEmpty) {
-        // Fetch/synthesize audio payload on-demand for local user voice messages
-        await ref.read(chatProvider.notifier).sendMessage(msg.text, isVoice: true);
-        final history = ref.read(chatProvider).messages;
-        if (history.isNotEmpty && history.last.audioUri != null) {
-          uri = history.last.audioUri;
-        }
+        // Synthesize audio payload on-demand without mutating chat history
+        final repository = ChatRepository();
+        uri = await repository.generateTts(msg.text, persona: 'vinr');
       }
       if (uri != null && uri.isNotEmpty) {
         try {
