@@ -4,7 +4,7 @@ import 'storage_service.dart';
 class ApiService {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8000/api/v1/',
+    defaultValue: 'http://192.168.0.132:8000/api/v1/',
   );
   late final Dio dio;
 
