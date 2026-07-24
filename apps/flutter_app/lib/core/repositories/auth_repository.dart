@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../../features/auth/models/user_model.dart';
 
@@ -18,9 +19,9 @@ class AuthRepository {
         return response.data as Map<String, dynamic>;
       }
     } on DioException catch (e) {
-      print('⚠️ AuthRepository login error: ${e.message}');
+      debugPrint('AuthRepository login error: ${e.message}');
     } catch (e) {
-      print('⚠️ AuthRepository login error: $e');
+      debugPrint('AuthRepository login error: $e');
     }
     return null;
   }
@@ -39,9 +40,9 @@ class AuthRepository {
         return response.data as Map<String, dynamic>;
       }
     } on DioException catch (e) {
-      print('⚠️ AuthRepository register error: ${e.message}');
+      debugPrint('AuthRepository register error: ${e.message}');
     } catch (e) {
-      print('⚠️ AuthRepository register error: $e');
+      debugPrint('AuthRepository register error: $e');
     }
     return null;
   }
@@ -59,9 +60,9 @@ class AuthRepository {
         );
       }
     } on DioException catch (e) {
-      print('⚠️ AuthRepository getMe error: ${e.message}');
+      debugPrint('AuthRepository getMe error: ${e.message}');
     } catch (e) {
-      print('⚠️ AuthRepository getMe error: $e');
+      debugPrint('AuthRepository getMe error: $e');
     }
     return null;
   }

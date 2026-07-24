@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 
 class ChatRepository {
@@ -22,9 +23,9 @@ class ChatRepository {
         return response.data as Map<String, dynamic>;
       }
     } on DioException catch (e) {
-      print('⚠️ ChatRepository sendMessage error: ${e.message}');
+      debugPrint('ChatRepository sendMessage error: ${e.message}');
     } catch (e) {
-      print('⚠️ ChatRepository sendMessage error: $e');
+      debugPrint('ChatRepository sendMessage error: $e');
     }
     return null;
   }
@@ -36,9 +37,9 @@ class ChatRepository {
         return response.data['messages'] as List<dynamic>?;
       }
     } on DioException catch (e) {
-      print('⚠️ ChatRepository getHistory error: ${e.message}');
+      debugPrint('ChatRepository getHistory error: ${e.message}');
     } catch (e) {
-      print('⚠️ ChatRepository getHistory error: $e');
+      debugPrint('ChatRepository getHistory error: $e');
     }
     return null;
   }

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 
 class StreakRepository {
@@ -11,9 +12,9 @@ class StreakRepository {
         return response.data as Map<String, dynamic>;
       }
     } on DioException catch (e) {
-      print('⚠️ StreakRepository getActiveStreak error: ${e.message}');
+      debugPrint('StreakRepository getActiveStreak error: ${e.message}');
     } catch (e) {
-      print('⚠️ StreakRepository getActiveStreak error: $e');
+      debugPrint('StreakRepository getActiveStreak error: $e');
     }
     return null;
   }
@@ -31,9 +32,9 @@ class StreakRepository {
         return response.data as Map<String, dynamic>;
       }
     } on DioException catch (e) {
-      print('⚠️ StreakRepository completeDay error: ${e.message}');
+      debugPrint('StreakRepository completeDay error: ${e.message}');
     } catch (e) {
-      print('⚠️ StreakRepository completeDay error: $e');
+      debugPrint('StreakRepository completeDay error: $e');
     }
     return null;
   }

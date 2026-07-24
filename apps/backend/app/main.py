@@ -26,6 +26,9 @@ PUBLIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public")
 os.makedirs(PUBLIC_DIR, exist_ok=True)
 app.mount("/public", StaticFiles(directory=PUBLIC_DIR), name="public")
 
+_background_tasks = set()
+
+
 @app.on_event("startup")
 async def startup_event():
     """Trigger database table creation and background tasks on startup."""
@@ -36,7 +39,9 @@ async def startup_event():
 
     # Pre-generate persona greetings in background to avoid blocking API startup
     import asyncio
-    asyncio.create_task(tts_service.pregenerate_greetings())
+    task = asyncio.create_task(tts_service.pregenerate_greetings())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
 # CORS
 app.add_middleware(
