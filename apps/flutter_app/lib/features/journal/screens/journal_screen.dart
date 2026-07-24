@@ -38,7 +38,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     {'name': 'Energized', 'icon': LucideIcons.zap, 'color': VinRColors.gold},
     {'name': 'Balanced', 'icon': LucideIcons.smile, 'color': VinRColors.emerald},
     {'name': 'Calm', 'icon': LucideIcons.wind, 'color': VinRColors.sapphire},
-    {'name': 'Heavy', 'icon': LucideIcons.cloudRain, 'color': VinRColors.lavender},
+    {'name': 'Reflective', 'icon': LucideIcons.sparkles, 'color': VinRColors.lavender},
   ];
 
   @override
@@ -182,17 +182,44 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Header Row
+                // Top Badge Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Gratitude Journal', style: VinRTypography.h1.copyWith(fontSize: 26, color: primaryTextColor)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: activeGold.withValues(alpha: isLight ? 0.12 : 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: activeGold.withValues(alpha: isLight ? 0.3 : 0.4),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.bookOpen, size: 12, color: activeGold),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'DAILY REFLECTION',
+                                  style: TextStyle(
+                                    color: activeGold,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text('GRATITUDE JOURNAL', style: VinRTypography.label.copyWith(color: mutedTextColor)),
                           const SizedBox(height: 2),
-                          Text('Voice & written daily reflections', style: VinRTypography.bodySm.copyWith(color: mutedTextColor)),
+                          Text('Mindful Daily Reflections', style: VinRTypography.h1.copyWith(fontSize: 26, color: primaryTextColor)),
                         ],
                       ),
                     ),
@@ -209,6 +236,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                             color: _isDictating ? VinRColors.crimson : activeGold,
                             width: 1,
                           ),
+                          boxShadow: isLight
+                              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]
+                              : [],
                         ),
                         child: Row(
                           children: [
@@ -232,9 +262,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-                // Live Dictation Status Bar
+                // Live Dictation Bar
                 if (_isDictating) ...[
                   GlassContainer(
                     color: VinRColors.crimsonGlow,
@@ -256,13 +286,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   const SizedBox(height: 16),
                 ],
 
-                // Mode Selector Bar (Write vs Entries)
+                // Navigation View Toggle Bar
                 Row(
                   children: [
                     Expanded(
                       child: GestureDetector(
                         onTap: () => setState(() => _viewMode = 'write'),
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
                             color: _viewMode == 'write'
@@ -294,7 +325,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                     Expanded(
                       child: GestureDetector(
                         onTap: () => setState(() => _viewMode = 'entries'),
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
                             color: _viewMode == 'entries'
@@ -328,9 +360,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
                 // WRITE MODE
                 if (_viewMode == 'write') ...[
-                  // Mood Selector Bar
+                  // Mood Selector Section
                   const SectionHeader(
-                    title: 'HOW ARE YOU FEELING RIGHT NOW?',
+                    title: 'HOW ARE YOU FEELING TODAY?',
                     icon: LucideIcons.heartHandshake,
                     iconColor: VinRColors.goldLight,
                   ),
@@ -469,7 +501,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   const SizedBox(height: 18),
 
                   const SectionHeader(
-                    title: 'SAVED ENTRIES',
+                    title: 'SAVED REFLECTIONS',
                     icon: LucideIcons.bookOpen,
                     iconColor: VinRColors.goldLight,
                   ),
