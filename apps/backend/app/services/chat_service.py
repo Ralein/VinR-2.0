@@ -26,35 +26,37 @@ Your primary goal is to support the user's wellbeing and productivity."""
 # ── Persona system prompts ──────────────────────────────────────────
 
 HOPE_PROMPT = f"""{BASE_IDENTITY_PROMPT}
-You are Hope — a kind, calm, and deeply empathetic VinR Buddy.
-You listen with unwavering patience and speak in a soothing, grounding tone.
-You validate before suggesting, and your goal is to make the user feel truly seen.
-Keep responses concise (1-3 sentences). Focus on emotional safety."""
+You are Hope — a warm, deeply empathetic VinR companion.
+You listen with patience and speak in a soothing, grounding tone.
+You always validate emotions before offering perspective.
+Respond in 2-4 sentences max. Prioritise emotional safety and genuine connection.
+Never give generic advice — be specific to what the user shares."""
 
 VINR_PROMPT = f"""{BASE_IDENTITY_PROMPT}
-You are VinR AI — a smart, efficient, and direct AI companion.
-You focus on providing the most accurate information and clear, logical advice.
-You maintain a professional and helpful tone, using technology and logic as your primary tools.
-Keep responses concise (1-3 sentences). Focus on productivity and clarity."""
+You are VinR AI — a smart, focused, results-driven companion.
+You cut through noise and provide clear, actionable insights.
+Your tone is confident, direct, and energising.
+Respond in 2-4 sentences max. Prioritise clarity, logic, and practical next steps."""
 
 SAGE_PROMPT = f"""{BASE_IDENTITY_PROMPT}
-You are Sage — a calm, analytical, and wise VinR Buddy.
-You provide practical wisdom and perspective, helping the user see the bigger picture.
-Your tone is steady, thoughtful, and encouraging.
-Keep responses concise (1-3 sentences). Focus on wisdom and perspective."""
+You are Sage — a calm, philosophical, and deeply wise companion.
+You offer perspective that helps users zoom out and see the bigger picture.
+Your tone is measured, thoughtful, and gently challenging.
+Respond in 2-4 sentences max. Prioritise wisdom, context, and reframing."""
 
 THERAPIST_PROMPT = f"""{BASE_IDENTITY_PROMPT}
-You are Dr. Aris — a professional clinical psychologist and therapist.
-Your demeanor is clinical yet compassionate. You structure your responses thoughtfully.
-You identify cognitive patterns and offer evidence-based therapeutic reflections.
-Keep responses concise (1-3 sentences). Focus on clinical insight and structured support."""
+You are Dr. Aris — a compassionate clinical psychologist.
+You use evidence-based therapeutic techniques (CBT, DBT, motivational interviewing).
+Your tone is warm but structured. You identify cognitive patterns without labelling.
+Respond in 2-4 sentences max. Prioritise insight, validation, and therapeutic reflection."""
 
 COACH_PROMPT = f"""{BASE_IDENTITY_PROMPT}
-You are Coach — a high-energy, motivational, and disciplined VinR Buddy.
-You push the user toward action and discipline. You treat wellness like training for a marathon.
-You use powerful, action-oriented language and offer 'tough love' encouragement.
-Keep responses concise (1-3 sentences). Focus on momentum and discipline."""
+You are Coach — a high-energy, results-obsessed performance coach.
+You push the user toward bold action with encouraging, powerful language.
+You treat every conversation like a training session — no excuses, only growth.
+Respond in 2-4 sentences max. Prioritise momentum, accountability, and action."""
 
+# Map from persona ID to prompt
 PERSONA_PROMPTS = {
     "hope": HOPE_PROMPT,
     "vinr": VINR_PROMPT,
@@ -203,24 +205,69 @@ async def generate_buddy_response(
         # Add current user message
         llm_messages.append({"role": "user", "content": message})
 
-        # 5. Call Groq
+        # 5. Call LLM via 9Router
         client = _get_client()
+
+        # Tune temperature per persona: coaches/vinr need higher creativity, hope needs stability
+        temp_map = {
+            "hope": 0.65, "vinr": 0.7, "sage": 0.72,
+            "therapist": 0.6, "coach": 0.85,
+        }
+        temperature = temp_map.get(normalized_persona, 0.72)
+
         response = await client.chat.completions.create(
             model=settings.NINE_ROUTER_MODEL,
-            max_tokens=512,
-            temperature=0.8,
+            max_tokens=1024,
+            temperature=temperature,
             messages=llm_messages,
         )
-        return response.choices[0].message.content.strip()
+        reply = response.choices[0].message.content.strip()
+
+        # Strip any leftover markdown fences the model might add
+        if reply.startswith("```"):
+            lines = reply.split("\n")
+            reply = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+
+        return reply
 
     except Exception as e:
-        print(f"⚠️ External LLM service fallback ({str(e)}), generating local response...")
+        print(f"⚠️ LLM service error ({str(e)}), using enhanced local fallback...")
         lower = message.lower()
-        if "anxious" in lower or "stress" in lower or "worry" in lower or "fear" in lower:
-            return "I hear you. Take a slow, deep breath with me. Inhale for 4 seconds, hold for 7, and release for 8. You have overcome 100% of your hardest days so far."
-        elif "happy" in lower or "win" in lower or "great" in lower or "good" in lower:
-            return "That's fantastic momentum! Building on positive wins is how champions stay consistent on their 21-day journey. What victory are you celebrating today?"
-        elif "hello" in lower or "hi" in lower or "hey" in lower:
-            return "Hey there, champion! I'm active and right here with you. How is your energy and mood feeling right now?"
+
+        # Richer keyword-driven fallback responses
+        if any(w in lower for w in ["anxious", "anxiety", "stress", "stressed", "worry", "fear", "panic"]):
+            return (
+                "I hear you — anxiety can feel overwhelming, but you\'re not alone in this. "
+                "Take a slow breath with me: inhale for 4 counts, hold for 4, exhale for 6. "
+                "You have navigated 100% of your hardest days so far. What\'s one small thing that feels manageable right now?"
+            )
+        elif any(w in lower for w in ["sad", "depress", "low", "empty", "hopeless", "unmotivated"]):
+            return (
+                "What you\'re feeling is real and valid — it\'s okay to sit with it for a moment. "
+                "Sometimes the smallest step forward is the most powerful one. "
+                "Is there one tiny thing that might bring even a flicker of comfort right now?"
+            )
+        elif any(w in lower for w in ["happy", "excited", "great", "amazing", "win", "proud", "achieved"]):
+            return (
+                "That\'s real momentum — I love hearing that! "
+                "Celebrating wins, big or small, is how consistency compounds into transformation. "
+                "What made today feel like a victory?"
+            )
+        elif any(w in lower for w in ["sleep", "tired", "exhausted", "insomnia", "rest"]):
+            return (
+                "Rest is not laziness — it\'s recovery, and recovery is where growth actually happens. "
+                "Try the 4-7-8 technique tonight: inhale 4s, hold 7s, exhale 8s. "
+                "Is there anything specific keeping you from sleeping well?"
+            )
+        elif any(w in lower for w in ["hello", "hi", "hey", "start", "begin"]):
+            return (
+                "Hey there! I\'m right here with you. "
+                "How\'s your energy and mood feeling today? "
+                "Whether you want to reflect, vent, or just talk — I\'m all in."
+            )
         else:
-            return "Every step forward counts. As your growth partner, I'm here to back your progress. Tell me what's on your mind."
+            return (
+                "I\'m here and fully listening. "
+                "Every moment you show up for yourself — even just by reaching out — is progress. "
+                "Tell me more about what\'s on your mind."
+            )

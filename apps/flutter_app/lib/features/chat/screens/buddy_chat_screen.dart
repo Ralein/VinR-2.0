@@ -496,15 +496,19 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
               children: [
                 Row(
                   children: [
-                    Text(
-                      persona.name,
-                      style: VinRTypography.body.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: primaryTextColor,
-                        fontSize: 16,
+                    Flexible(
+                      child: Text(
+                        persona.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: VinRTypography.body.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: primaryTextColor,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     // Tag badge — same pill pattern as home dashboard
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -529,8 +533,8 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
                 Row(
                   children: [
                     Container(
-                      width: 7,
-                      height: 7,
+                      width: 6,
+                      height: 6,
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                         color: VinRColors.emerald,
@@ -708,42 +712,42 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
 
                 // Bubble
                 Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: ConstrainedBox(
                     constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.75,
+                      maxWidth: MediaQuery.of(context).size.width * 0.74,
                     ),
-                    decoration: BoxDecoration(
-                      color: isAi ? aiBubbleBg : userBubbleBg,
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(20),
-                        topRight: const Radius.circular(20),
-                        bottomLeft: Radius.circular(isAi ? 4 : 20),
-                        bottomRight: Radius.circular(isAi ? 20 : 4),
-                      ),
-                      border: isAi
-                          ? Border.all(color: context.borderColor)
-                          : null,
-                      boxShadow: [
-                        BoxShadow(
-                          color: isLight
-                              ? Colors.black.withValues(alpha: 0.06)
-                              : Colors.black.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isAi ? aiBubbleBg : userBubbleBg,
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(20),
+                          topRight: const Radius.circular(20),
+                          bottomLeft: Radius.circular(isAi ? 4 : 20),
+                          bottomRight: Radius.circular(isAi ? 20 : 4),
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildFormattedText(
-                          msg.text,
-                          VinRTypography.bodySm.copyWith(
-                            color: isAi ? primaryTextColor : Colors.white,
-                            height: 1.5,
+                        border: isAi ? Border.all(color: context.borderColor) : null,
+                        boxShadow: [
+                          BoxShadow(
+                            color: isLight
+                                ? Colors.black.withValues(alpha: 0.06)
+                                : Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildFormattedText(
+                            msg.text,
+                            VinRTypography.bodySm.copyWith(
+                              color: isAi ? primaryTextColor : Colors.white,
+                              height: 1.5,
+                            ),
+                          ),
 
                         // Voice playback pill
                         if (msg.isVoice || (msg.audioUri != null && msg.audioUri!.isNotEmpty)) ...[
@@ -812,7 +816,8 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
                             ],
                           ],
                         ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -1003,6 +1008,8 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
                     const SizedBox(width: 6),
                     Text(
                       prompt,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: primaryTextColor, fontSize: 12),
                     ),
                   ],
