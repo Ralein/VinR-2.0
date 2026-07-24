@@ -5,11 +5,37 @@ without throwing SQL syntax errors.
 """
 
 import json
-from typing import List
+from typing import List, Sequence
 from sqlalchemy import select
 from app.core.database import AsyncSessionLocal
 from app.models.rag import KnowledgeChunk
 from app.core.embeddings import embedding_service
+
+
+def _calculate_distance(chunk: KnowledgeChunk, query_vector: List[float]) -> float:
+    """Calculate Euclidean distance between query vector and chunk embedding."""
+    if not chunk.embedding:
+        return 999.0
+    try:
+        emb = chunk.embedding
+        if isinstance(emb, str):
+            emb = json.loads(emb)
+        sum_sq = sum((q - c) ** 2 for q, c in zip(query_vector, emb))
+        return sum_sq ** 0.5
+    except Exception:
+        return 999.0
+
+
+async def _search_sqlite_chunks(session, query_vector: List[float], top_k: int) -> List[KnowledgeChunk]:
+    """In-memory vector search for SQLite."""
+    stmt = select(KnowledgeChunk)
+    result = await session.execute(stmt)
+    chunks = list(result.scalars().all())
+    if not chunks:
+        return []
+    chunks.sort(key=lambda c: _calculate_distance(c, query_vector))
+    return chunks[:top_k]
+
 
 async def retrieve_context(query: str, top_k: int = 3) -> str:
     """
@@ -26,40 +52,13 @@ async def retrieve_context(query: str, top_k: int = 3) -> str:
         return ""
 
     try:
-        # Generate embedding for the query
         query_vector = embedding_service.embed_text(query)
 
         async with AsyncSessionLocal() as session:
-            # Check if SQLite or PostgreSQL
             bind = session.get_bind()
-            is_sqlite = bind.dialect.name == "sqlite"
-
-            if is_sqlite:
-                # SQLite vector search: retrieve all chunks & compute Euclidean distance in Python
-                stmt = select(KnowledgeChunk)
-                result = await session.execute(stmt)
-                chunks = list(result.scalars().all())
-
-                if not chunks:
-                    return ""
-
-                def calculate_dist(chunk: KnowledgeChunk) -> float:
-                    if not chunk.embedding:
-                        return 999.0
-                    try:
-                        emb = chunk.embedding
-                        if isinstance(emb, str):
-                            emb = json.loads(emb)
-                        # Euclidean distance
-                        sum_sq = sum((q - c) ** 2 for q, c in zip(query_vector, emb))
-                        return sum_sq ** 0.5
-                    except Exception:
-                        return 999.0
-
-                chunks.sort(key=calculate_dist)
-                top_chunks = chunks[:top_k]
+            if bind.dialect.name == "sqlite":
+                top_chunks = await _search_sqlite_chunks(session, query_vector, top_k)
             else:
-                # PostgreSQL pgvector similarity search using L2 distance (<->)
                 stmt = (
                     select(KnowledgeChunk)
                     .order_by(KnowledgeChunk.embedding.l2_distance(query_vector))
@@ -71,12 +70,7 @@ async def retrieve_context(query: str, top_k: int = 3) -> str:
             if not top_chunks:
                 return ""
 
-            # Format as context string
-            context_parts = []
-            for chunk in top_chunks:
-                context_parts.append(f"[{chunk.source}]\n{chunk.content}")
-
-            return "\n\n".join(context_parts)
+            return "\n\n".join(f"[{chunk.source}]\n{chunk.content}" for chunk in top_chunks)
 
     except Exception as e:
         print(f"⚠️ Error in RAG retrieval: {e}")
