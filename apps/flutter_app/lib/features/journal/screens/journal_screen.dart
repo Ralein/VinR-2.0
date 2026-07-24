@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
@@ -11,6 +11,7 @@ import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/gold_button.dart';
 import '../../../core/widgets/audio_waveform_visualizer.dart';
 import '../../../core/widgets/vinr_toast.dart';
+import '../../../core/services/voice_recorder_service.dart';
 
 class JournalScreen extends ConsumerStatefulWidget {
   const JournalScreen({super.key});
@@ -22,10 +23,11 @@ class JournalScreen extends ConsumerStatefulWidget {
 class _JournalScreenState extends ConsumerState<JournalScreen> {
   String _viewMode = 'write'; // 'write' | 'entries'
   bool _isDictating = false;
+  bool _isTranscribing = false;
   String _selectedMood = 'Balanced';
   String _searchQuery = '';
 
-  late stt.SpeechToText _speech;
+  final _recorder = VoiceRecorderService.instance;
 
   final _g1Controller = TextEditingController();
   final _g2Controller = TextEditingController();
@@ -44,7 +46,6 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   @override
   void initState() {
     super.initState();
-    _speech = stt.SpeechToText();
   }
 
   @override
@@ -53,44 +54,65 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     _g2Controller.dispose();
     _g3Controller.dispose();
     _reflectionController.dispose();
+    _recorder.cancel();
     super.dispose();
   }
 
-  void _toggleVoiceDictation() async {
-    if (!_isDictating) {
-      bool available = await _speech.initialize(
-        onStatus: (val) => debugPrint('Dictation status: $val'),
-        onError: (val) => debugPrint('Dictation error: $val'),
-      );
-      if (!mounted) return;
-      if (available) {
-        setState(() => _isDictating = true);
-        _speech.listen(
-          onResult: (val) {
-            if (mounted) {
-              setState(() {
-                final text = val.recognizedWords;
-                if (_reflectionController.text.isEmpty) {
-                  _reflectionController.text = text;
-                } else {
-                  _reflectionController.text = '${_reflectionController.text} $text';
-                }
-              });
-            }
-          },
-        );
-      } else {
-        VinRToast.show(
-          context,
-          message: 'Speech dictation not available on device',
-          icon: LucideIcons.micOff,
-          iconColor: VinRColors.crimson,
-        );
-      }
+  void _onVoicePressStart() async {
+    HapticFeedback.mediumImpact();
+    final started = await _recorder.start();
+    if (!mounted) return;
+    if (started) {
+      setState(() => _isDictating = true);
     } else {
-      setState(() => _isDictating = false);
-      _speech.stop();
+      VinRToast.show(
+        context,
+        message: 'Microphone permission required',
+        icon: LucideIcons.micOff,
+        iconColor: VinRColors.crimson,
+      );
     }
+  }
+
+  void _onVoicePressEnd() async {
+    if (!_isDictating) return;
+    HapticFeedback.heavyImpact();
+    setState(() {
+      _isDictating = false;
+      _isTranscribing = true;
+    });
+
+    final text = await _recorder.stopAndTranscribe();
+    if (!mounted) return;
+    setState(() => _isTranscribing = false);
+
+    if (text != null && text.isNotEmpty) {
+      setState(() {
+        if (_reflectionController.text.isEmpty) {
+          _reflectionController.text = text;
+        } else {
+          _reflectionController.text = '${_reflectionController.text} $text';
+        }
+      });
+      VinRToast.show(
+        context,
+        message: 'Voice transcribed successfully!',
+        icon: LucideIcons.checkCircle2,
+        iconColor: VinRColors.emerald,
+      );
+    } else {
+      VinRToast.show(
+        context,
+        message: 'Could not hear voice clearly — try again',
+        icon: LucideIcons.alertCircle,
+        iconColor: VinRColors.gold,
+      );
+    }
+  }
+
+  void _onVoicePressCancel() async {
+    await _recorder.cancel();
+    if (mounted) setState(() => _isDictating = false);
   }
 
   void _saveEntry() {
@@ -224,17 +246,20 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                       ),
                     ),
 
-                    // Voice Dictation Toggle Button
+                    // Voice Dictation — Hold to Record
                     GestureDetector(
-                      onTap: _toggleVoiceDictation,
-                      child: Container(
+                      onLongPressStart: (_) => _onVoicePressStart(),
+                      onLongPressEnd: (_) => _onVoicePressEnd(),
+                      onLongPressCancel: _onVoicePressCancel,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: _isDictating ? VinRColors.crimson.withValues(alpha: 0.15) : activeGold.withValues(alpha: 0.15),
+                          color: _isDictating ? VinRColors.crimson.withValues(alpha: 0.20) : activeGold.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                             color: _isDictating ? VinRColors.crimson : activeGold,
-                            width: 1,
+                            width: _isDictating ? 1.5 : 1,
                           ),
                           boxShadow: isLight
                               ? [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]
@@ -243,13 +268,13 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                         child: Row(
                           children: [
                             Icon(
-                              _isDictating ? LucideIcons.micOff : LucideIcons.mic,
+                              _isTranscribing ? LucideIcons.loader : (_isDictating ? LucideIcons.micOff : LucideIcons.mic),
                               color: _isDictating ? VinRColors.crimson : activeGold,
                               size: 18,
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              _isDictating ? 'Listening...' : 'Voice Input',
+                              _isTranscribing ? 'Transcribing...' : (_isDictating ? 'Release to Stop' : 'Hold to Speak'),
                               style: TextStyle(
                                 color: _isDictating ? VinRColors.crimson : activeGold,
                                 fontWeight: FontWeight.bold,
@@ -264,22 +289,30 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Live Dictation Bar
-                if (_isDictating) ...[
+                // Live Recording / Transcribing Status Bar
+                if (_isDictating || _isTranscribing) ...[
                   GlassContainer(
-                    color: VinRColors.crimsonGlow,
-                    border: Border.all(color: VinRColors.crimson),
+                    color: _isTranscribing ? VinRColors.sapphireGlow : VinRColors.crimsonGlow,
+                    border: Border.all(color: _isTranscribing ? VinRColors.sapphire : VinRColors.crimson),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
+                      children: [
                         Row(
                           children: [
-                            Icon(LucideIcons.mic, color: VinRColors.crimson, size: 20),
-                            SizedBox(width: 12),
-                            Text('Recording voice dictation...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            Icon(
+                              _isTranscribing ? LucideIcons.loader : LucideIcons.mic,
+                              color: _isTranscribing ? VinRColors.sapphire : VinRColors.crimson,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _isTranscribing ? 'AI Transcribing your voice...' : 'Listening — release button to transcribe',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
                           ],
                         ),
-                        AudioWaveformVisualizer(isPlaying: true, barColor: VinRColors.crimson),
+                        if (_isDictating)
+                          AudioWaveformVisualizer(isPlaying: true, barColor: VinRColors.crimson),
                       ],
                     ),
                   ),

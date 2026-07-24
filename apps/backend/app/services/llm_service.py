@@ -1,4 +1,4 @@
-"""LLM Service — Groq API integration for emotional analysis."""
+"""LLM Service — 9Router (free models) integration for emotional analysis."""
 
 import json
 import openai
@@ -7,17 +7,18 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-# Async OpenAI client
+# Async OpenAI client pointed at 9Router local endpoint
 _client: AsyncOpenAI | None = None
 
 
 def get_client() -> AsyncOpenAI:
-    """Get or create cached OpenAI client for xAI/Grok."""
+    """Get or create cached OpenAI client pointed at 9Router."""
     global _client
     if _client is None:
-        if not settings.GROQ_API_KEY:
-            raise ValueError("GROQ_API_KEY is not set.")
-        _client = AsyncOpenAI(api_key=settings.GROQ_API_KEY, base_url="https://api.groq.com/openai/v1")
+        _client = AsyncOpenAI(
+            api_key=settings.NINE_ROUTER_API_KEY,
+            base_url=settings.NINE_ROUTER_URL,
+        )
     return _client
 
 
@@ -108,7 +109,7 @@ async def analyze_emotions(
     try:
         client = get_client()
         response = await client.chat.completions.create(
-            model=settings.GROQ_MODEL,
+            model=settings.NINE_ROUTER_MODEL,
             max_tokens=2048,
             temperature=0.7,
             messages=[

@@ -36,9 +36,16 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     EMAILS_FROM_EMAIL: str = "noreply@vinrmobile.com"
 
-    # Groq API
+    # Groq API (kept for Whisper audio transcription only)
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.1-8b-instant"
+
+    # 9Router — OpenAI-compatible local LLM router (free models)
+    NINE_ROUTER_URL: str = "http://localhost:20128/v1"
+    # Free model — 9router will auto-select the best free provider
+    NINE_ROUTER_MODEL: str = "google/gemini-2.0-flash-exp:free"
+    # 9Router does not require an API key for local use
+    NINE_ROUTER_API_KEY: str = "nine-router"
 
     # Local TTS (chatterbox-tts)
     CHATTERBOX_DEVICE: str = "cpu"
