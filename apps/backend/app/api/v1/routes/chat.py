@@ -1,5 +1,6 @@
 """VinR Buddy chat routes — Ephemeral in-memory chat (Genshin-style)."""
 
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +18,7 @@ from app.services.kokoro_service import text_to_speech, audio_bytes_to_data_uri
 
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+VOICE_COMMAND = "/voice"
 
 
 # ── Request / Response schemas ───────────────────────────────────────
@@ -25,7 +27,6 @@ class SendMessageRequest(BaseModel):
     text: str
     voice_enabled: bool = False
     persona: str = "vinr"  # Default persona
-
 
 
 class ChatMessageResponse(BaseModel):
@@ -47,17 +48,15 @@ class SendMessageResponse(BaseModel):
 @router.post("/message", response_model=SendMessageResponse)
 async def send_message(
     request: SendMessageRequest,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),  # Still needed for adaptive_service user profile
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Send a message to VinR Buddy and get a response (ephemeral — no DB save)."""
     user_id = current_user["sub"]
 
-    # Check for /voice command or voice_enabled flag
-    is_voice = request.voice_enabled or request.text.strip().startswith("/voice")
     clean_text = request.text.strip()
-    if clean_text.startswith("/voice"):
-        clean_text = clean_text.replace("/voice", "", 1).strip()
+    if clean_text.startswith(VOICE_COMMAND):
+        clean_text = clean_text.replace(VOICE_COMMAND, "", 1).strip()
 
     if not clean_text:
         raise HTTPException(status_code=400, detail="Message cannot be empty")
@@ -107,7 +106,7 @@ async def send_message(
 
 @router.post("/transcribe")
 async def transcribe_audio(
-    file: UploadFile = File(...),
+    file: Annotated[UploadFile, File(...)],
 ):
     """Voice to text using Groq Whisper."""
     try:
@@ -141,7 +140,7 @@ class TTSRequest(BaseModel):
 @router.post("/tts")
 async def generate_tts(
     request: TTSRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: Annotated[dict, Depends(get_current_user)],
 ):
     """Generate TTS audio for arbitrary text (e.g. intro greetings)."""
     audio_bytes = await text_to_speech(request.text, persona=request.persona)
@@ -153,7 +152,7 @@ async def generate_tts(
 
 @router.get("/history")
 async def get_history(
-    current_user: dict = Depends(get_current_user),
+    current_user: Annotated[dict, Depends(get_current_user)],
 ):
     """Fetch conversation history from in-memory store (ephemeral)."""
     user_id = current_user["sub"]
@@ -175,7 +174,7 @@ async def get_history(
 
 @router.delete("/history")
 async def delete_history(
-    current_user: dict = Depends(get_current_user),
+    current_user: Annotated[dict, Depends(get_current_user)],
 ):
     """Clear all conversation history from memory for the current user."""
     user_id = current_user["sub"]

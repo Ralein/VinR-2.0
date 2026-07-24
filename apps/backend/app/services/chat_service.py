@@ -114,7 +114,7 @@ def memory_save_message(
     persona: str | None = "hope",
 ) -> dict:
     """Save a message to in-memory store with FIFO eviction."""
-    from datetime import datetime
+    from datetime import datetime, timezone
     import uuid
 
     key = _hash_uid(user_id)
@@ -124,7 +124,7 @@ def memory_save_message(
         "content": content,
         "audio_url": audio_url,
         "persona": persona,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
     _chat_memory[key].append(msg)
