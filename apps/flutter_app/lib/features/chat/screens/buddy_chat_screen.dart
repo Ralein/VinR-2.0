@@ -9,12 +9,70 @@ import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
 import '../../../core/widgets/ambient_background.dart';
+import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/audio_waveform_visualizer.dart';
 import '../../../core/widgets/vinr_toast.dart';
 import '../models/chat_message_model.dart';
 import '../providers/chat_provider.dart';
 import '../../../core/repositories/chat_repository.dart';
 
+// ─────────────────────────────────────────────
+// Companion Persona Definitions
+// ─────────────────────────────────────────────
+class _Persona {
+  final String id;
+  final String name;
+  final IconData icon;
+  final Color color;
+  final Color bg;
+  final String tag;
+  const _Persona({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.color,
+    required this.bg,
+    required this.tag,
+  });
+}
+
+const _personas = [
+  _Persona(
+    id: 'vinr',
+    name: 'VinR Coach',
+    icon: LucideIcons.crown,
+    color: VinRColors.gold,
+    bg: Color(0x25B8832A),
+    tag: 'Growth',
+  ),
+  _Persona(
+    id: 'listener',
+    name: 'Gentle Listener',
+    icon: LucideIcons.heartHandshake,
+    color: VinRColors.emerald,
+    bg: VinRColors.emeraldGlow,
+    tag: 'Empathy',
+  ),
+  _Persona(
+    id: 'stoic',
+    name: 'Stoic Mentor',
+    icon: LucideIcons.shield,
+    color: VinRColors.sapphire,
+    bg: Color(0x252C6DB3),
+    tag: 'Wisdom',
+  ),
+];
+
+const _quickPrompts = [
+  'I feel anxious today',
+  'Give me a 2-min grounding',
+  'Help me reframe a thought',
+  'Night wind-down reflection',
+];
+
+// ─────────────────────────────────────────────
+// Screen
+// ─────────────────────────────────────────────
 class BuddyChatScreen extends ConsumerStatefulWidget {
   const BuddyChatScreen({super.key});
 
@@ -22,11 +80,13 @@ class BuddyChatScreen extends ConsumerStatefulWidget {
   ConsumerState<BuddyChatScreen> createState() => _BuddyChatScreenState();
 }
 
-class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTickerProviderStateMixin {
+class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
+    with SingleTickerProviderStateMixin {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
+  late final AudioPlayer _audioPlayer;
 
-  // Voice recording gesture states (Instagram Style Pointer Listener)
+  // Voice recording states
   bool _isRecording = false;
   bool _isLocked = false;
   int _recordingSeconds = 0;
@@ -42,53 +102,15 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
   late AnimationController _pulseController;
   late Animation<double> _pulseScale;
 
-  // Persona companion avatars definition (diffo companion avatars)
-  final List<Map<String, dynamic>> _personas = [
-    {
-      'id': 'vinr',
-      'name': 'VinR Coach',
-      'icon': LucideIcons.crown,
-      'color': VinRColors.gold,
-      'bgColor': const Color(0x25B8832A),
-      'tag': 'Growth'
-    },
-    {
-      'id': 'listener',
-      'name': 'Gentle Listener',
-      'icon': LucideIcons.heartHandshake,
-      'color': VinRColors.emerald,
-      'bgColor': VinRColors.emeraldGlow,
-      'tag': 'Empathy'
-    },
-    {
-      'id': 'stoic',
-      'name': 'Stoic Mentor',
-      'icon': LucideIcons.shield,
-      'color': VinRColors.sapphire,
-      'bgColor': const Color(0x252C6DB3),
-      'tag': 'Wisdom'
-    },
-  ];
-
-  final List<String> _quickPrompts = [
-    'I feel anxious today',
-    'Give me a 2-min grounding',
-    'Help me reframe a thought',
-    'Night wind-down reflection',
-  ];
-
-  late final AudioPlayer _audioPlayer;
+  // ── Lifecycle ──────────────────────────────
 
   @override
   void initState() {
     super.initState();
     _audioPlayer = AudioPlayer();
     _audioPlayer.onPlayerComplete.listen((_) {
-      if (mounted) {
-        setState(() => _currentlyPlayingAudioId = null);
-      }
+      if (mounted) setState(() => _currentlyPlayingAudioId = null);
     });
-
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -108,6 +130,8 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
     super.dispose();
   }
 
+  // ── Voice Recording Gesture Handlers ───────
+
   void _startRecordingGesture() {
     HapticFeedback.mediumImpact();
     setState(() {
@@ -117,12 +141,9 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
       _dragX = 0;
       _dragY = 0;
     });
-
     _recordingTimer?.cancel();
-    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() => _recordingSeconds++);
-      }
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _recordingSeconds++);
     });
   }
 
@@ -142,13 +163,11 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
   void _stopAndSendRecording() {
     HapticFeedback.heavyImpact();
     _recordingTimer?.cancel();
-
     final sec = _recordingSeconds > 0 ? _recordingSeconds : 1;
     ref.read(chatProvider.notifier).sendMessage(
-      'Voice reflection (${sec}s)',
-      isVoice: true,
-    );
-
+          'Voice reflection (${sec}s)',
+          isVoice: true,
+        );
     setState(() {
       _isRecording = false;
       _isLocked = false;
@@ -156,9 +175,10 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
       _dragX = 0;
       _dragY = 0;
     });
-
     _scrollToBottom();
   }
+
+  // ── Audio Playback ─────────────────────────
 
   Future<void> _toggleAudioPlayback(ChatMessageModel msg) async {
     if (_currentlyPlayingAudioId == msg.id) {
@@ -168,7 +188,6 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
       await _audioPlayer.stop();
       String? uri = msg.audioUri;
       if (uri == null || uri.isEmpty) {
-        // Synthesize audio payload on-demand without mutating chat history
         final repository = ChatRepository();
         uri = await repository.generateTts(msg.text, persona: 'vinr');
       }
@@ -182,6 +201,8 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
       }
     }
   }
+
+  // ── Message Send ───────────────────────────
 
   void _send([String? textOverride]) {
     final text = textOverride ?? _messageController.text.trim();
@@ -211,80 +232,83 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
     return '$mins:${secs.toString().padLeft(2, '0')}';
   }
 
-  void _showMoreMenu(BuildContext context) {
-    final primaryTextColor = context.textColor;
+  // ── Bottom Sheets ──────────────────────────
 
+  void _showMoreMenu(BuildContext ctx) {
+    final primaryTextColor = ctx.textColor;
     showModalBottomSheet(
-      context: context,
-      backgroundColor: context.surfaceColor,
+      context: ctx,
+      backgroundColor: ctx.surfaceColor,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: context.textGhostColor.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: ctx.textGhostColor.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                const SizedBox(height: 16),
-                ListTile(
-                  leading: Icon(
-                    _voiceModeEnabled ? LucideIcons.volume2 : LucideIcons.volumeX,
-                    color: context.goldColor,
-                  ),
-                  title: Text(
-                    _voiceModeEnabled ? 'Voice Mode Active' : 'Enable Voice Replies',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: primaryTextColor),
-                  ),
-                  subtitle: Text(
-                    _voiceModeEnabled ? 'AI will read responses aloud' : 'Tap to enable spoken audio replies',
-                    style: TextStyle(color: context.textMutedColor, fontSize: 12),
-                  ),
-                  trailing: Switch(
-                    value: _voiceModeEnabled,
-                    onChanged: (val) {
-                      setState(() => _voiceModeEnabled = val);
-                      Navigator.pop(context);
-                      VinRToast.show(
-                        context,
-                        message: val ? 'Voice mode enabled' : 'Voice mode muted',
-                        icon: val ? LucideIcons.volume2 : LucideIcons.volumeX,
-                        iconColor: context.goldColor,
-                      );
-                    },
-                    activeThumbColor: context.goldColor,
-                  ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Icon(
+                  _voiceModeEnabled ? LucideIcons.volume2 : LucideIcons.volumeX,
+                  color: ctx.goldColor,
                 ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(LucideIcons.trash2, color: VinRColors.crimson),
-                  title: const Text('Clear Chat History', style: TextStyle(color: VinRColors.crimson, fontWeight: FontWeight.bold)),
-                  subtitle: Text('Reset conversation memory', style: TextStyle(color: context.textMutedColor, fontSize: 12)),
-                  onTap: () {
-                    ref.read(chatProvider.notifier).clearMessages();
-                    Navigator.pop(context);
+                title: Text(
+                  _voiceModeEnabled ? 'Voice Mode Active' : 'Enable Voice Replies',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: primaryTextColor),
+                ),
+                subtitle: Text(
+                  _voiceModeEnabled
+                      ? 'AI will read responses aloud'
+                      : 'Tap to enable spoken audio replies',
+                  style: TextStyle(color: ctx.textMutedColor, fontSize: 12),
+                ),
+                trailing: Switch(
+                  value: _voiceModeEnabled,
+                  onChanged: (val) {
+                    setState(() => _voiceModeEnabled = val);
+                    Navigator.pop(ctx);
                     VinRToast.show(
-                      context,
-                      message: 'Chat memory cleared',
-                      icon: LucideIcons.trash2,
-                      iconColor: VinRColors.crimson,
+                      ctx,
+                      message: val ? 'Voice mode enabled' : 'Voice mode muted',
+                      icon: val ? LucideIcons.volume2 : LucideIcons.volumeX,
+                      iconColor: ctx.goldColor,
                     );
                   },
+                  activeThumbColor: ctx.goldColor,
                 ),
-              ],
-            ),
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(LucideIcons.trash2, color: VinRColors.crimson),
+                title: const Text('Clear Chat History',
+                    style: TextStyle(color: VinRColors.crimson, fontWeight: FontWeight.bold)),
+                subtitle: Text('Reset conversation memory',
+                    style: TextStyle(color: ctx.textMutedColor, fontSize: 12)),
+                onTap: () {
+                  ref.read(chatProvider.notifier).clearMessages();
+                  Navigator.pop(ctx);
+                  VinRToast.show(
+                    ctx,
+                    message: 'Chat memory cleared',
+                    icon: LucideIcons.trash2,
+                    iconColor: VinRColors.crimson,
+                  );
+                },
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -293,37 +317,37 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
       context: context,
       backgroundColor: context.surfaceColor,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: Icon(LucideIcons.copy, color: context.goldColor, size: 20),
-                title: Text('Copy Text', style: TextStyle(color: context.textColor)),
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: msg.text));
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Message copied to clipboard')),
-                  );
-                },
-              ),
-              ListTile(
-                leading: Icon(LucideIcons.reply, color: context.goldColor, size: 20),
-                title: Text('Reply', style: TextStyle(color: context.textColor)),
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() => _replyingTo = msg);
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: Icon(LucideIcons.copy, color: ctx.goldColor, size: 20),
+              title: Text('Copy Text', style: TextStyle(color: ctx.textColor)),
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: msg.text));
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Message copied to clipboard')),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(LucideIcons.reply, color: ctx.goldColor, size: 20),
+              title: Text('Reply', style: TextStyle(color: ctx.textColor)),
+              onTap: () {
+                Navigator.pop(ctx);
+                setState(() => _replyingTo = msg);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
+
+  // ── Helpers ────────────────────────────────
 
   Widget _buildFormattedText(String text, TextStyle baseStyle) {
     final parts = text.split(RegExp(r'(\*\*.*?\*\*)'));
@@ -342,6 +366,15 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
     );
   }
 
+  _Persona _resolvePersona(String personaName) {
+    return _personas.firstWhere(
+      (p) => p.name == personaName,
+      orElse: () => _personas.first,
+    );
+  }
+
+  // ── Build ──────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(chatProvider);
@@ -352,22 +385,8 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
     final mutedTextColor = context.textMutedColor;
     final activeGold = context.goldColor;
     final bottomInset = MediaQuery.of(context).padding.bottom;
-    final topInset = MediaQuery.of(context).padding.top;
 
-    // Distinct persona companion avatar resolution
-    IconData activePersonaIcon = LucideIcons.crown;
-    Color activePersonaColor = activeGold;
-    Color activePersonaBg = context.goldMutedColor;
-
-    if (chatState.persona == 'Gentle Listener') {
-      activePersonaIcon = LucideIcons.heartHandshake;
-      activePersonaColor = VinRColors.emerald;
-      activePersonaBg = VinRColors.emeraldGlow;
-    } else if (chatState.persona == 'Stoic Mentor') {
-      activePersonaIcon = LucideIcons.shield;
-      activePersonaColor = VinRColors.sapphire;
-      activePersonaBg = const Color(0x252C6DB3);
-    }
+    final persona = _resolvePersona(chatState.persona);
 
     return Scaffold(
       body: AmbientBackground(
@@ -375,493 +394,906 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen> with SingleTi
           bottom: false,
           child: Column(
             children: [
-              // Top Header Bar — Matching React Native SafeBlurView
-              Container(
-                padding: EdgeInsets.only(left: 16, right: 16, top: topInset > 0 ? 8 : 16, bottom: 12),
+              // ── Header ──────────────────────
+              _buildHeader(context, persona, activeGold, primaryTextColor, mutedTextColor, isLight),
+
+              // ── Persona Switcher ────────────
+              _buildPersonaSwitcher(context, chatState, notifier, activeGold, primaryTextColor, isLight),
+
+              Divider(color: context.borderColor, height: 1),
+
+              // ── Messages ────────────────────
+              Expanded(
+                child: _buildMessageList(
+                  context,
+                  chatState,
+                  persona,
+                  activeGold,
+                  primaryTextColor,
+                  mutedTextColor,
+                  isLight,
+                ),
+              ),
+
+              // ── Typing Indicator ────────────
+              if (chatState.isGenerating) _buildTypingIndicator(context, chatState, activeGold, mutedTextColor),
+
+              // ── Quick Prompts ───────────────
+              _buildQuickPrompts(context, activeGold, primaryTextColor),
+
+              // ── Reply Preview ───────────────
+              if (_replyingTo != null)
+                _buildReplyPreview(context, activeGold, primaryTextColor),
+
+              // ── Input Bar ──────────────────
+              _buildInputBar(context, activeGold, primaryTextColor, mutedTextColor, isLight, bottomInset),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // Sub-widgets
+  // ─────────────────────────────────────────────
+
+  Widget _buildHeader(
+    BuildContext context,
+    _Persona persona,
+    Color activeGold,
+    Color primaryTextColor,
+    Color mutedTextColor,
+    bool isLight,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: context.borderColor)),
+      ),
+      child: Row(
+        children: [
+          // Back
+          GestureDetector(
+            onTap: () => context.pop(),
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: context.surfaceColor,
+                border: Border.all(color: context.borderColor),
+              ),
+              child: Icon(LucideIcons.chevronLeft, color: primaryTextColor, size: 18),
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Persona Avatar
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: persona.bg,
+              border: Border.all(color: persona.color, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: persona.color.withValues(alpha: 0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(persona.icon, color: persona.color, size: 20),
+          ),
+          const SizedBox(width: 12),
+
+          // Name + Status
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      persona.name,
+                      style: VinRTypography.body.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: primaryTextColor,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Tag badge — same pill pattern as home dashboard
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: persona.color.withValues(alpha: isLight ? 0.12 : 0.22),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: persona.color.withValues(alpha: 0.4)),
+                      ),
+                      child: Text(
+                        persona.tag.toUpperCase(),
+                        style: TextStyle(
+                          color: persona.color,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: VinRColors.emerald,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Online • Companion Active',
+                      style: TextStyle(color: mutedTextColor, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Voice toggle
+          GestureDetector(
+            onTap: () => setState(() => _voiceModeEnabled = !_voiceModeEnabled),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _voiceModeEnabled
+                    ? activeGold.withValues(alpha: 0.15)
+                    : context.surfaceColor,
+                border: Border.all(
+                  color: _voiceModeEnabled ? activeGold : context.borderColor,
+                ),
+              ),
+              child: Icon(
+                _voiceModeEnabled ? LucideIcons.volume2 : LucideIcons.volumeX,
+                color: _voiceModeEnabled ? activeGold : context.textGhostColor,
+                size: 18,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // More
+          GestureDetector(
+            onTap: () => _showMoreMenu(context),
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: context.surfaceColor,
+                border: Border.all(color: context.borderColor),
+              ),
+              child: Icon(LucideIcons.moreVertical, color: primaryTextColor, size: 18),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonaSwitcher(
+    BuildContext context,
+    dynamic chatState,
+    dynamic notifier,
+    Color activeGold,
+    Color primaryTextColor,
+    bool isLight,
+  ) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: _personas.map((p) {
+          final isSel = chatState.persona == p.name;
+          return Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: GestureDetector(
+              onTap: () {
+                notifier.setPersona(p.name);
+                notifier.sendMessage('Switched to ${p.name}. How can I help you today?');
+                _scrollToBottom();
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: context.borderColor, width: 1)),
+                  color: isSel
+                      ? p.color.withValues(alpha: isLight ? 0.14 : 0.24)
+                      : context.surfaceColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSel ? p.color : context.borderColor,
+                    width: isSel ? 1.5 : 1,
+                  ),
+                  boxShadow: isSel
+                      ? [BoxShadow(color: p.color.withValues(alpha: 0.2), blurRadius: 8)]
+                      : [],
                 ),
                 child: Row(
                   children: [
-                    IconButton(
-                      icon: Icon(Icons.arrow_back_ios_new_rounded, color: primaryTextColor, size: 20),
-                      onPressed: () => context.pop(),
-                    ),
-                    const SizedBox(width: 4),
-
-                    // Active Persona Distinct Companion Avatar
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: activePersonaBg,
-                        border: Border.all(color: activePersonaColor, width: 1.5),
+                    Icon(p.icon, size: 14, color: isSel ? p.color : context.textGhostColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      p.name,
+                      style: TextStyle(
+                        color: isSel ? primaryTextColor : context.textGhostColor,
+                        fontSize: 12,
+                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
                       ),
-                      child: Icon(activePersonaIcon, color: activePersonaColor, size: 18),
-                    ),
-                    const SizedBox(width: 10),
-
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(chatState.persona, style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor, fontSize: 16)),
-                          const SizedBox(height: 1),
-                          Row(
-                            children: [
-                              Container(
-                                width: 7,
-                                height: 7,
-                                decoration: const BoxDecoration(shape: BoxShape.circle, color: VinRColors.emerald),
-                              ),
-                              const SizedBox(width: 6),
-                              Text('Online • Companion Active', style: TextStyle(color: mutedTextColor, fontSize: 11)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(_voiceModeEnabled ? LucideIcons.volume2 : LucideIcons.volumeX, color: activeGold, size: 20),
-                      onPressed: () => setState(() => _voiceModeEnabled = !_voiceModeEnabled),
-                      tooltip: 'Toggle Voice Audio',
-                    ),
-                    IconButton(
-                      icon: Icon(LucideIcons.moreVertical, color: primaryTextColor, size: 20),
-                      onPressed: () => _showMoreMenu(context),
-                      tooltip: 'Options',
                     ),
                   ],
                 ),
               ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
 
-              // Persona Switcher Bar with distinct companion avatars
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: _personas.map((p) {
-                    final isSel = chatState.persona == p['name'];
-                    final icon = p['icon'] as IconData;
-                    final pColor = p['color'] as Color;
+  Widget _buildMessageList(
+    BuildContext context,
+    dynamic chatState,
+    _Persona persona,
+    Color activeGold,
+    Color primaryTextColor,
+    Color mutedTextColor,
+    bool isLight,
+  ) {
+    if (chatState.messages.isEmpty) {
+      return _buildEmptyState(context, persona, activeGold, primaryTextColor, mutedTextColor, isLight);
+    }
 
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: GestureDetector(
-                        onTap: () {
-                          notifier.setPersona(p['name'] as String);
-                          notifier.sendMessage('Switched to ${p['name']}. How can I help you today?');
-                          _scrollToBottom();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isSel ? pColor.withValues(alpha: isLight ? 0.15 : 0.25) : context.surfaceColor,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: isSel ? pColor : context.borderColor, width: isSel ? 1.5 : 1),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(icon, size: 14, color: isSel ? pColor : context.textGhostColor),
-                              const SizedBox(width: 6),
-                              Text(
-                                p['name'] as String,
-                                style: TextStyle(
-                                  color: isSel ? primaryTextColor : context.textGhostColor,
-                                  fontSize: 12,
-                                  fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                                ),
-                              ),
-                            ],
-                          ),
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 12),
+      itemCount: chatState.messages.length,
+      itemBuilder: (context, index) {
+        final msg = chatState.messages[index] as ChatMessageModel;
+        final isAi = msg.sender == MessageSender.ai;
+        final isPlayingThis = _currentlyPlayingAudioId == msg.id;
+
+        // AI bubble: glass card; User bubble: solid gold-tinted sapphire
+        final aiBubbleBg = isLight ? Colors.white : VinRColors.surface;
+        final userBubbleBg = isLight ? const Color(0xFF2C6DB3) : VinRColors.sapphire;
+
+        return GestureDetector(
+          onLongPress: () => _showMessageOptions(msg),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              mainAxisAlignment: isAi ? MainAxisAlignment.start : MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // AI avatar dot
+                if (isAi) ...[
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: persona.bg,
+                      border: Border.all(color: persona.color.withValues(alpha: 0.6)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: persona.color.withValues(alpha: 0.2),
+                          blurRadius: 8,
                         ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              Divider(color: context.borderColor, height: 1),
-
-              // Messages Stream List with distinct companion avatars
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 12),
-                  itemCount: chatState.messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = chatState.messages[index];
-                    final isAi = msg.sender == MessageSender.ai;
-
-                    final aiBubbleBg = isLight ? Colors.white : VinRColors.surface;
-                    final userBubbleBg = isLight ? const Color(0xFF2C6DB3) : VinRColors.sapphire;
-                    final isPlayingThis = _currentlyPlayingAudioId == msg.id;
-
-                    return GestureDetector(
-                      onLongPress: () => _showMessageOptions(msg),
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: Row(
-                          mainAxisAlignment: isAi ? MainAxisAlignment.start : MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (isAi) ...[
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: activePersonaBg,
-                                  border: Border.all(color: activePersonaColor.withValues(alpha: 0.6)),
-                                ),
-                                child: Icon(activePersonaIcon, color: activePersonaColor, size: 16),
-                              ),
-                              const SizedBox(width: 8),
-                            ],
-                            Flexible(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: isAi ? aiBubbleBg : userBubbleBg,
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: const Radius.circular(18),
-                                    topRight: const Radius.circular(18),
-                                    bottomLeft: Radius.circular(isAi ? 4 : 18),
-                                    bottomRight: Radius.circular(isAi ? 18 : 4),
-                                  ),
-                                  border: isAi ? Border.all(color: context.borderColor) : null,
-                                  boxShadow: isLight
-                                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]
-                                      : [],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildFormattedText(
-                                      msg.text,
-                                      VinRTypography.bodySm.copyWith(
-                                        color: isAi ? primaryTextColor : Colors.white,
-                                        height: 1.45,
-                                      ),
-                                    ),
-
-                                    // Voice Playback Pill (React Native parity)
-                                    if (msg.isVoice || (msg.audioUri != null && msg.audioUri!.isNotEmpty)) ...[
-                                      const SizedBox(height: 8),
-                                      GestureDetector(
-                                        onTap: () => _toggleAudioPlayback(msg),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: isAi ? activeGold.withValues(alpha: 0.12) : Colors.white.withValues(alpha: 0.18),
-                                            borderRadius: BorderRadius.circular(20),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Container(
-                                                width: 26,
-                                                height: 26,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: isAi ? activeGold : Colors.white,
-                                                ),
-                                                child: Center(
-                                                  child: Icon(
-                                                    isPlayingThis ? LucideIcons.pause : LucideIcons.play,
-                                                    size: 13,
-                                                    color: isAi ? Colors.white : userBubbleBg,
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              AudioWaveformVisualizer(
-                                                isPlaying: isPlayingThis,
-                                                barColor: isAi ? primaryTextColor : Colors.white,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          '${msg.timestamp.hour}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
-                                          style: TextStyle(
-                                            color: isAi ? mutedTextColor : Colors.white.withValues(alpha: 0.7),
-                                            fontSize: 10,
-                                          ),
-                                        ),
-                                        if (!isAi) ...[
-                                          const SizedBox(width: 4),
-                                          const Icon(LucideIcons.checkCheck, size: 12, color: Colors.white70),
-                                        ],
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              if (chatState.isGenerating) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: activeGold)),
-                      const SizedBox(width: 8),
-                      Text('${chatState.persona} is reflecting...', style: TextStyle(color: mutedTextColor, fontSize: 12, fontStyle: FontStyle.italic)),
-                    ],
+                      ],
+                    ),
+                    child: Icon(persona.icon, color: persona.color, size: 16),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                ],
 
-              // Quick Starter Prompts Chips
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: Row(
-                  children: _quickPrompts.map((prompt) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ActionChip(
-                        avatar: Icon(LucideIcons.sparkles, size: 12, color: activeGold),
-                        label: Text(prompt, style: TextStyle(color: primaryTextColor, fontSize: 11)),
-                        backgroundColor: context.surfaceColor,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: context.borderColor)),
-                        onPressed: () => _send(prompt),
+                // Bubble
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.75,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isAi ? aiBubbleBg : userBubbleBg,
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(20),
+                        topRight: const Radius.circular(20),
+                        bottomLeft: Radius.circular(isAi ? 4 : 20),
+                        bottomRight: Radius.circular(isAi ? 20 : 4),
                       ),
-                    );
-                  }).toList(),
-                ),
-              ),
-
-              // Reply Preview Bar
-              if (_replyingTo != null) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: activeGold.withValues(alpha: 0.1),
-                  child: Row(
-                    children: [
-                      Icon(LucideIcons.reply, size: 16, color: activeGold),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Replying to: "${_replyingTo!.text}"',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: primaryTextColor, fontSize: 12, fontStyle: FontStyle.italic),
+                      border: isAi
+                          ? Border.all(color: context.borderColor)
+                          : null,
+                      boxShadow: [
+                        BoxShadow(
+                          color: isLight
+                              ? Colors.black.withValues(alpha: 0.06)
+                              : Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(LucideIcons.x, size: 16),
-                        onPressed: () => setState(() => _replyingTo = null),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildFormattedText(
+                          msg.text,
+                          VinRTypography.bodySm.copyWith(
+                            color: isAi ? primaryTextColor : Colors.white,
+                            height: 1.5,
+                          ),
+                        ),
 
-              // Instagram-Style Hold-to-Record & Swipe-to-Cancel / Slide-to-Lock Bar
-              if (_isRecording) ...[
-                Container(
-                  padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: bottomInset > 0 ? bottomInset + 4 : 10),
-                  color: context.surfaceColor,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Trash Cancel Button
-                      IconButton(
-                        icon: const Icon(LucideIcons.trash2, color: VinRColors.crimson, size: 22),
-                        onPressed: _cancelRecordingGesture,
-                        tooltip: 'Cancel recording',
-                      ),
-
-                      // Timer & Pulsing Dot
-                      Row(
-                        children: [
-                          ScaleTransition(
-                            scale: _pulseScale,
+                        // Voice playback pill
+                        if (msg.isVoice || (msg.audioUri != null && msg.audioUri!.isNotEmpty)) ...[
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: () => _toggleAudioPlayback(msg),
                             child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: VinRColors.crimson,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isAi
+                                    ? activeGold.withValues(alpha: 0.12)
+                                    : Colors.white.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isAi
+                                      ? activeGold.withValues(alpha: 0.3)
+                                      : Colors.white.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 26,
+                                    height: 26,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: isAi ? activeGold : Colors.white,
+                                    ),
+                                    child: Center(
+                                      child: Icon(
+                                        isPlayingThis ? LucideIcons.pause : LucideIcons.play,
+                                        size: 12,
+                                        color: isAi ? Colors.white : userBubbleBg,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  AudioWaveformVisualizer(
+                                    isPlaying: isPlayingThis,
+                                    barColor: isAi ? primaryTextColor : Colors.white,
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _formatTime(_recordingSeconds),
-                            style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.bold, fontSize: 15),
                           ),
                         ],
-                      ),
 
-                      // Hint Text ("Swipe up to lock ↑" or "Hands-free locked")
-                      Expanded(
-                        child: Text(
-                          _isLocked
-                              ? 'Hands-free locked'
-                              : (_dragY < -25 ? 'Release to lock' : 'Swipe up to lock'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: (_isLocked || _dragY < -25) ? activeGold : mutedTextColor,
-                            fontSize: 12,
-                            fontWeight: (_isLocked || _dragY < -25) ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-
-                      // Send Button
-                      GestureDetector(
-                        onTap: _stopAndSendRecording,
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: VinRColors.goldGradient,
-                            boxShadow: [
-                              BoxShadow(
-                                color: activeGold.withValues(alpha: 0.35),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+                        // Timestamp + checkmarks
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${msg.timestamp.hour}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
+                              style: TextStyle(
+                                color: isAi
+                                    ? mutedTextColor
+                                    : Colors.white.withValues(alpha: 0.65),
+                                fontSize: 10,
                               ),
+                            ),
+                            if (!isAi) ...[
+                              const SizedBox(width: 4),
+                              const Icon(LucideIcons.checkCheck, size: 12, color: Colors.white70),
                             ],
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              LucideIcons.send,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                Padding(
-                  padding: EdgeInsets.only(left: 12, right: 12, top: 4, bottom: bottomInset > 0 ? bottomInset + 4 : 10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Raw Pointer Listener for Fail-Proof Hold to Record & Swipe Left to Cancel
-                      Listener(
-                        onPointerDown: (event) {
-                          _touchStartPosition = event.position;
-                          _startRecordingGesture();
-                        },
-                        onPointerMove: (event) {
-                          if (_touchStartPosition != null && _isRecording && !_isLocked) {
-                            final dx = event.position.dx - _touchStartPosition!.dx;
-                            final dy = event.position.dy - _touchStartPosition!.dy;
-                            setState(() {
-                              _dragX = dx;
-                              _dragY = dy;
-                            });
-
-                            if (dx < -30) {
-                              _cancelRecordingGesture();
-                            } else if (dy < -40 || _dragY < -40) {
-                              HapticFeedback.heavyImpact();
-                              setState(() {
-                                _isLocked = true;
-                                _dragX = 0;
-                                _dragY = 0;
-                              });
-                            }
-                          }
-                        },
-                        onPointerUp: (event) {
-                          if (_touchStartPosition != null) {
-                            _touchStartPosition = null;
-                            if (!_isLocked) {
-                              if (_dragX < -30) {
-                                _cancelRecordingGesture();
-                              } else {
-                                _stopAndSendRecording();
-                              }
-                            }
-                          }
-                        },
-                        onPointerCancel: (_) {
-                          if (_touchStartPosition != null) {
-                            _touchStartPosition = null;
-                            _cancelRecordingGesture();
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          child: Icon(LucideIcons.mic, color: activeGold, size: 22),
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      Expanded(
-                        child: TextField(
-                          controller: _messageController,
-                          style: TextStyle(color: primaryTextColor),
-                          decoration: InputDecoration(
-                            hintText: 'Share what\'s on your mind...',
-                            hintStyle: TextStyle(color: mutedTextColor),
-                            fillColor: context.surfaceColor,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              borderSide: BorderSide(color: context.borderColor),
-                            ),
-                          ),
-                          onSubmitted: (_) => _send(),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () => _send(),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: VinRColors.goldGradient,
-                            boxShadow: [
-                              BoxShadow(
-                                color: activeGold.withValues(alpha: 0.35),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              LucideIcons.send,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
-            ],
+            ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(
+    BuildContext context,
+    _Persona persona,
+    Color activeGold,
+    Color primaryTextColor,
+    Color mutedTextColor,
+    bool isLight,
+  ) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Big persona avatar
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: persona.bg,
+                border: Border.all(color: persona.color, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: persona.color.withValues(alpha: 0.3),
+                    blurRadius: 24,
+                    spreadRadius: 4,
+                  ),
+                ],
+              ),
+              child: Icon(persona.icon, color: persona.color, size: 38),
+            ),
+            const SizedBox(height: 20),
+
+            // Badge pill — matches home dashboard pattern
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                color: activeGold.withValues(alpha: isLight ? 0.12 : 0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: activeGold.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(LucideIcons.sparkles, size: 12, color: activeGold),
+                  const SizedBox(width: 6),
+                  Text(
+                    'AI COMPANION READY',
+                    style: TextStyle(
+                      color: activeGold,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            Text(
+              persona.name,
+              style: VinRTypography.h1.copyWith(fontSize: 22, color: primaryTextColor),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your ${persona.tag.toLowerCase()} companion is here.\nShare what\'s on your mind.',
+              textAlign: TextAlign.center,
+              style: VinRTypography.bodySm.copyWith(color: mutedTextColor, height: 1.6),
+            ),
+            const SizedBox(height: 24),
+
+            // Starter prompt cards
+            GlassContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(LucideIcons.zap, size: 14, color: activeGold),
+                      const SizedBox(width: 8),
+                      Text(
+                        'TRY ASKING',
+                        style: VinRTypography.label.copyWith(color: mutedTextColor),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ..._quickPrompts.map((p) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: GestureDetector(
+                          onTap: () => _send(p),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: activeGold.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: activeGold.withValues(alpha: 0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(LucideIcons.messageCircle, size: 14, color: activeGold),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    p,
+                                    style: VinRTypography.bodySm.copyWith(color: primaryTextColor),
+                                  ),
+                                ),
+                                Icon(LucideIcons.chevronRight, size: 14, color: mutedTextColor),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )),
+                ],
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTypingIndicator(
+    BuildContext context,
+    dynamic chatState,
+    Color activeGold,
+    Color mutedTextColor,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 1.8, color: activeGold),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '${chatState.persona} is reflecting...',
+            style: TextStyle(
+              color: mutedTextColor,
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickPrompts(BuildContext context, Color activeGold, Color primaryTextColor) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        children: _quickPrompts.map((prompt) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => _send(prompt),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: context.surfaceColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.sparkles, size: 12, color: activeGold),
+                    const SizedBox(width: 6),
+                    Text(
+                      prompt,
+                      style: TextStyle(color: primaryTextColor, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildReplyPreview(BuildContext context, Color activeGold, Color primaryTextColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: activeGold.withValues(alpha: 0.08),
+        border: Border(top: BorderSide(color: activeGold.withValues(alpha: 0.2))),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 36,
+            decoration: BoxDecoration(
+              color: activeGold,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Icon(LucideIcons.reply, size: 14, color: activeGold),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Replying to: "${_replyingTo!.text}"',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: primaryTextColor,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => setState(() => _replyingTo = null),
+            child: Icon(LucideIcons.x, size: 18, color: context.textGhostColor),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputBar(
+    BuildContext context,
+    Color activeGold,
+    Color primaryTextColor,
+    Color mutedTextColor,
+    bool isLight,
+    double bottomInset,
+  ) {
+    if (_isRecording) {
+      return _buildRecordingBar(context, activeGold, primaryTextColor, mutedTextColor, bottomInset);
+    }
+
+    return Container(
+      padding: EdgeInsets.only(
+        left: 12,
+        right: 12,
+        top: 10,
+        bottom: bottomInset > 0 ? bottomInset + 6 : 12,
+      ),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: context.borderColor)),
+        color: context.surfaceColor.withValues(alpha: 0.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Mic — raw Listener for reliable hold-to-record
+          Listener(
+            onPointerDown: (e) {
+              _touchStartPosition = e.position;
+              _startRecordingGesture();
+            },
+            onPointerMove: (e) {
+              if (_touchStartPosition != null && _isRecording && !_isLocked) {
+                final dx = e.position.dx - _touchStartPosition!.dx;
+                final dy = e.position.dy - _touchStartPosition!.dy;
+                setState(() {
+                  _dragX = dx;
+                  _dragY = dy;
+                });
+                if (dx < -30) {
+                  _cancelRecordingGesture();
+                } else if (dy < -40) {
+                  HapticFeedback.heavyImpact();
+                  setState(() {
+                    _isLocked = true;
+                    _dragX = 0;
+                    _dragY = 0;
+                  });
+                }
+              }
+            },
+            onPointerUp: (e) {
+              if (_touchStartPosition != null) {
+                _touchStartPosition = null;
+                if (!_isLocked) {
+                  if (_dragX < -30) {
+                    _cancelRecordingGesture();
+                  } else {
+                    _stopAndSendRecording();
+                  }
+                }
+              }
+            },
+            onPointerCancel: (_) {
+              if (_touchStartPosition != null) {
+                _touchStartPosition = null;
+                _cancelRecordingGesture();
+              }
+            },
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: activeGold.withValues(alpha: 0.1),
+                border: Border.all(color: activeGold.withValues(alpha: 0.35)),
+              ),
+              child: Icon(LucideIcons.mic, color: activeGold, size: 20),
+            ),
+          ),
+          const SizedBox(width: 10),
+
+          // Text field
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              style: TextStyle(color: primaryTextColor, fontSize: 15),
+              maxLines: 4,
+              minLines: 1,
+              decoration: InputDecoration(
+                hintText: 'Share what\'s on your mind...',
+                hintStyle: TextStyle(color: mutedTextColor, fontSize: 14),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                filled: true,
+                fillColor: context.surfaceColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: context.borderColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: context.borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: activeGold, width: 1.5),
+                ),
+              ),
+              onSubmitted: (_) => _send(),
+            ),
+          ),
+          const SizedBox(width: 10),
+
+          // Send button — gradient gold orb
+          GestureDetector(
+            onTap: _send,
+            child: Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: VinRColors.goldGradient,
+                boxShadow: [
+                  BoxShadow(
+                    color: activeGold.withValues(alpha: 0.4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Icon(LucideIcons.send, color: Colors.white, size: 18),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecordingBar(
+    BuildContext context,
+    Color activeGold,
+    Color primaryTextColor,
+    Color mutedTextColor,
+    double bottomInset,
+  ) {
+    return Container(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: bottomInset > 0 ? bottomInset + 6 : 12,
+      ),
+      decoration: BoxDecoration(
+        color: VinRColors.crimsonGlow.withValues(alpha: 0.5),
+        border: Border(top: BorderSide(color: VinRColors.crimson.withValues(alpha: 0.4))),
+      ),
+      child: Row(
+        children: [
+          // Cancel
+          GestureDetector(
+            onTap: _cancelRecordingGesture,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: VinRColors.crimson.withValues(alpha: 0.15),
+                border: Border.all(color: VinRColors.crimson.withValues(alpha: 0.4)),
+              ),
+              child: const Icon(LucideIcons.trash2, color: VinRColors.crimson, size: 18),
+            ),
+          ),
+          const SizedBox(width: 14),
+
+          // Pulsing dot + timer
+          ScaleTransition(
+            scale: _pulseScale,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: VinRColors.crimson,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            _formatTime(_recordingSeconds),
+            style: TextStyle(
+              color: primaryTextColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Lock hint
+          Expanded(
+            child: Text(
+              _isLocked
+                  ? '🔒 Hands-free locked'
+                  : (_dragY < -25 ? 'Release to lock ↑' : '← Swipe to cancel  ·  Slide up to lock'),
+              style: TextStyle(
+                color: (_isLocked || _dragY < -25) ? activeGold : mutedTextColor,
+                fontSize: 11,
+                fontWeight: (_isLocked || _dragY < -25) ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+
+          // Send
+          GestureDetector(
+            onTap: _stopAndSendRecording,
+            child: Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: VinRColors.goldGradient,
+                boxShadow: [
+                  BoxShadow(
+                    color: activeGold.withValues(alpha: 0.4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Icon(LucideIcons.send, color: Colors.white, size: 18),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -136,17 +136,19 @@ async def analyze_emotions(
     except json.JSONDecodeError as e:
         # Fallback to mock if JSON parsing fails
         print(f"⚠️ Failed to parse Groq response as JSON: {e}\nResponse was: {response_text}")
-        return _get_fallback_response(mood_tag, raw_text)
+        return _get_fallback_response(mood_tag)
     except openai.APIError as e:
         print(f"⚠️ Groq API error: {e}")
-        return _get_fallback_response(mood_tag, raw_text)
+        return _get_fallback_response(mood_tag)
     except Exception as e:
         print(f"⚠️ Unexpected error in analyze_emotions: {e}")
-        return _get_fallback_response(mood_tag, raw_text)
+        return _get_fallback_response(mood_tag)
+
+_FIVE_MIN = "5 minutes"
 
 
-def _get_fallback_response(mood_tag: str, raw_text: str) -> dict:
-    """Fallback response when Groq API is unavailable."""
+def _get_fallback_response(mood_tag: str) -> dict:
+    """Fallback response when LLM service is unavailable."""
     return {
         "isEmergency": False,
         "primaryEmotion": mood_tag,
@@ -174,7 +176,7 @@ def _get_fallback_response(mood_tag: str, raw_text: str) -> dict:
                 "name": "5-4-3-2-1 Grounding",
                 "emoji": "🌿",
                 "category": "grounding",
-                "duration": "5 minutes",
+                "duration": _FIVE_MIN,
                 "instructions": [
                     "Name 5 things you can see",
                     "Name 4 things you can touch",
@@ -206,7 +208,7 @@ def _get_fallback_response(mood_tag: str, raw_text: str) -> dict:
                 "name": "Morning Gratitude",
                 "emoji": "☀️",
                 "category": "meditation",
-                "duration": "5 minutes",
+                "duration": _FIVE_MIN,
                 "instructions": [
                     "Write down 3 things you're grateful for",
                     "Include at least 1 small, specific thing",
@@ -220,7 +222,7 @@ def _get_fallback_response(mood_tag: str, raw_text: str) -> dict:
                 "name": "Evening Wind-Down Breathing",
                 "emoji": "🌙",
                 "category": "breathing",
-                "duration": "5 minutes",
+                "duration": _FIVE_MIN,
                 "instructions": [
                     "Use 4-7-8 technique: inhale 4s, hold 7s, exhale 8s",
                     "Do 4-8 cycles",
