@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../theme/vinr_colors.dart';
 import '../theme/vinr_typography.dart';
 import 'glass_container.dart';
@@ -21,6 +22,35 @@ class SleepModeModal extends StatefulWidget {
 class _SleepModeModalState extends State<SleepModeModal> {
   bool _isPlaying = false;
   int _selectedTimer = 15;
+  late final AudioPlayer _audioPlayer;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AudioPlayer();
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _toggleAudio() async {
+    if (_isPlaying) {
+      await _audioPlayer.stop();
+      setState(() => _isPlaying = false);
+    } else {
+      try {
+        // Play soothing ambient ocean/rain sound stream
+        await _audioPlayer.play(UrlSource('https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3'));
+        setState(() => _isPlaying = true);
+      } catch (e) {
+        debugPrint('Sleep audio playback error: $e');
+        setState(() => _isPlaying = true);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +61,10 @@ class _SleepModeModalState extends State<SleepModeModal> {
         ModalBarrier(
           color: Colors.black.withValues(alpha: 0.85),
           dismissible: true,
-          onDismiss: widget.onClose,
+          onDismiss: () async {
+            await _audioPlayer.stop();
+            widget.onClose();
+          },
         ),
         Center(
           child: Container(
@@ -55,7 +88,10 @@ class _SleepModeModalState extends State<SleepModeModal> {
                       ),
                       IconButton(
                         icon: const Icon(LucideIcons.x, color: VinRColors.textMuted),
-                        onPressed: widget.onClose,
+                        onPressed: () async {
+                          await _audioPlayer.stop();
+                          widget.onClose();
+                        },
                       ),
                     ],
                   ),
@@ -82,9 +118,7 @@ class _SleepModeModalState extends State<SleepModeModal> {
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() => _isPlaying = !_isPlaying);
-                    },
+                    onPressed: _toggleAudio,
                     icon: Icon(_isPlaying ? LucideIcons.pause : LucideIcons.play),
                     label: Text(_isPlaying ? 'Pause Sleep Audio' : 'Start Night Wind-Down'),
                     style: ElevatedButton.styleFrom(

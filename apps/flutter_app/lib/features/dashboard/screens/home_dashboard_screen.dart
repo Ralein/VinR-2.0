@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
@@ -13,6 +14,8 @@ import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/gold_button.dart';
 import '../../../core/widgets/vinr_toast.dart';
 import '../../../core/widgets/app_animations.dart';
+import '../../../core/repositories/checkin_repository.dart';
+import '../../../core/repositories/chat_repository.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../streak/providers/streak_provider.dart';
 
@@ -26,6 +29,9 @@ class HomeDashboardScreen extends ConsumerStatefulWidget {
 class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
   String _selectedMood = 'Calm';
   bool _isPlayingQuoteAudio = false;
+  late final AudioPlayer _audioPlayer;
+  final _checkinRepo = CheckinRepository();
+  final _chatRepo = ChatRepository();
 
   final List<Map<String, dynamic>> _moodOptions = [
     {'label': 'Energized', 'icon': LucideIcons.zap, 'color': VinRColors.gold},
@@ -33,6 +39,76 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
     {'label': 'Anxious', 'icon': LucideIcons.wind, 'color': VinRColors.crimson},
     {'label': 'Reflective', 'icon': LucideIcons.sparkles, 'color': VinRColors.sapphire},
   ];
+
+  static const String _dailyQuote = "We suffer more often in imagination than in reality. Master your thoughts, master your day.";
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AudioPlayer();
+    _audioPlayer.onPlayerComplete.listen((_) {
+      if (mounted) setState(() => _isPlayingQuoteAudio = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _toggleQuoteAudio() async {
+    if (_isPlayingQuoteAudio) {
+      await _audioPlayer.stop();
+      if (mounted) setState(() => _isPlayingQuoteAudio = false);
+    } else {
+      VinRToast.show(
+        context,
+        message: 'Synthesizing audio reflection...',
+        icon: LucideIcons.loader,
+        iconColor: VinRColors.gold,
+      );
+
+      final audioUrl = await _chatRepo.generateTts(_dailyQuote, persona: 'stoic');
+      if (audioUrl != null && audioUrl.isNotEmpty) {
+        try {
+          await _audioPlayer.play(UrlSource(audioUrl));
+          if (mounted) {
+            setState(() => _isPlayingQuoteAudio = true);
+            VinRToast.show(
+              context,
+              message: 'Playing daily audio reflection',
+              icon: LucideIcons.volume2,
+              iconColor: VinRColors.gold,
+            );
+          }
+        } catch (e) {
+          debugPrint('Dashboard audio error: $e');
+        }
+      } else {
+        if (mounted) {
+          VinRToast.show(
+            context,
+            message: 'Quote reflection audio ready',
+            icon: LucideIcons.volume2,
+            iconColor: VinRColors.gold,
+          );
+        }
+      }
+    }
+  }
+
+  void _onMoodSelect(String mood, IconData icon, Color color) async {
+    setState(() => _selectedMood = mood);
+    VinRToast.show(
+      context,
+      message: 'Mood updated to $mood',
+      icon: icon,
+      iconColor: color,
+    );
+
+    await _checkinRepo.submitCheckin(mood: mood, note: 'Mood pulse: $mood');
+  }
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -137,7 +213,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Streak Hero Component (Dynamic Connection)
+                // Streak Hero Component
                 FadeSlideTransition(
                   duration: const Duration(milliseconds: 600),
                   child: GlassContainer(
@@ -149,24 +225,27 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Dynamic One-Tap Check-In Nudge Card
+                // One-Tap Check-In Nudge Card
                 if (!streak.isCompletedToday) ...[
                   GoldButton(
                     text: 'Record Today\'s Check-in →',
-                    onPressed: () {
+                    onPressed: () async {
                       streakNotifier.checkInToday();
-                      VinRToast.show(
-                        context,
-                        message: 'Daily Check-in Recorded! Winning streak updated.',
-                        icon: LucideIcons.flame,
-                        iconColor: VinRColors.gold,
-                      );
+                      await _checkinRepo.submitCheckin(mood: _selectedMood);
+                      if (context.mounted) {
+                        VinRToast.show(
+                          context,
+                          message: 'Daily Check-in Recorded! Winning streak updated.',
+                          icon: LucideIcons.flame,
+                          iconColor: VinRColors.gold,
+                        );
+                      }
                     },
                   ),
                   const SizedBox(height: 20),
                 ],
 
-                // Mood & Energy Pulse Selector (UI/UX Feature)
+                // Mood & Energy Pulse Selector
                 const SectionHeader(
                   title: 'DAILY MOOD & ENERGY PULSE',
                   icon: LucideIcons.heartPulse,
@@ -183,15 +262,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: GestureDetector(
-                          onTap: () {
-                            setState(() => _selectedMood = m['label'] as String);
-                            VinRToast.show(
-                              context,
-                              message: 'Mood updated to ${m['label']}',
-                              icon: icon,
-                              iconColor: color,
-                            );
-                          },
+                          onTap: () => _onMoodSelect(m['label'] as String, icon, color),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
@@ -303,21 +374,13 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                           ),
                           IconButton(
                             icon: Icon(_isPlayingQuoteAudio ? LucideIcons.pause : LucideIcons.volume2, color: activeGold, size: 20),
-                            onPressed: () {
-                              setState(() => _isPlayingQuoteAudio = !_isPlayingQuoteAudio);
-                              VinRToast.show(
-                                context,
-                                message: _isPlayingQuoteAudio ? 'Playing daily audio reflection' : 'Audio paused',
-                                icon: LucideIcons.volume2,
-                                iconColor: activeGold,
-                              );
-                            },
+                            onPressed: _toggleQuoteAudio,
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '"We suffer more often in imagination than in reality. Master your thoughts, master your day."',
+                        '"$_dailyQuote"',
                         style: TextStyle(color: primaryTextColor, fontSize: 14, height: 1.45, fontStyle: FontStyle.italic),
                       ),
                       const SizedBox(height: 8),

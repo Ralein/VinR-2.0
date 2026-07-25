@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/theme_context.dart';
@@ -9,9 +8,8 @@ import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/gold_button.dart';
-import '../../../core/widgets/audio_waveform_visualizer.dart';
 import '../../../core/widgets/vinr_toast.dart';
-import '../../../core/services/voice_recorder_service.dart';
+import '../../../core/repositories/journal_repository.dart';
 
 class JournalScreen extends ConsumerStatefulWidget {
   const JournalScreen({super.key});
@@ -22,12 +20,11 @@ class JournalScreen extends ConsumerStatefulWidget {
 
 class _JournalScreenState extends ConsumerState<JournalScreen> {
   String _viewMode = 'write'; // 'write' | 'entries'
-  bool _isDictating = false;
-  bool _isTranscribing = false;
   String _selectedMood = 'Balanced';
   String _searchQuery = '';
+  bool _isLoading = false;
 
-  final _recorder = VoiceRecorderService.instance;
+  final _journalRepo = JournalRepository();
 
   final _g1Controller = TextEditingController();
   final _g2Controller = TextEditingController();
@@ -46,6 +43,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   @override
   void initState() {
     super.initState();
+    _loadEntries();
   }
 
   @override
@@ -54,68 +52,43 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     _g2Controller.dispose();
     _g3Controller.dispose();
     _reflectionController.dispose();
-    _recorder.cancel();
     super.dispose();
   }
 
-  void _onVoicePressStart() async {
-    HapticFeedback.mediumImpact();
-    final started = await _recorder.start();
-    if (!mounted) return;
-    if (started) {
-      setState(() => _isDictating = true);
-    } else {
-      VinRToast.show(
-        context,
-        message: 'Microphone permission required',
-        icon: LucideIcons.micOff,
-        iconColor: VinRColors.crimson,
-      );
-    }
-  }
-
-  void _onVoicePressEnd() async {
-    if (!_isDictating) return;
-    HapticFeedback.heavyImpact();
-    setState(() {
-      _isDictating = false;
-      _isTranscribing = true;
-    });
-
-    final text = await _recorder.stopAndTranscribe();
-    if (!mounted) return;
-    setState(() => _isTranscribing = false);
-
-    if (text != null && text.isNotEmpty) {
+  Future<void> _loadEntries() async {
+    setState(() => _isLoading = true);
+    final remoteEntries = await _journalRepo.getJournalEntries();
+    if (mounted) {
       setState(() {
-        if (_reflectionController.text.isEmpty) {
-          _reflectionController.text = text;
-        } else {
-          _reflectionController.text = '${_reflectionController.text} $text';
+        _isLoading = false;
+        if (remoteEntries.isNotEmpty) {
+          _savedEntries.clear();
+          for (final item in remoteEntries) {
+            final gratitudeList = (item['gratitude_items'] as List?)?.map((e) => e.toString()).toList() ?? [];
+            _savedEntries.add({
+              'id': item['id'] ?? 'entry_${DateTime.now().millisecondsSinceEpoch}',
+              'date': item['date'] ?? 'Today, ${_formatCurrentTime()}',
+              'mood': _moodIntToString(item['mood_at_entry']),
+              'items': gratitudeList.isNotEmpty ? gratitudeList : ['Logged personal reflection'],
+              'note': item['reflection_text'] ?? 'Reflected on personal growth and daily wins.',
+              'tags': ['Daily Gratitude', _moodIntToString(item['mood_at_entry'])],
+              'aiReflection': item['ai_response'] ?? 'Gratitude entry saved! Building daily self-reflection strengthens emotional resilience.',
+            });
+          }
         }
       });
-      VinRToast.show(
-        context,
-        message: 'Voice transcribed successfully!',
-        icon: LucideIcons.checkCircle2,
-        iconColor: VinRColors.emerald,
-      );
-    } else {
-      VinRToast.show(
-        context,
-        message: 'Could not hear voice clearly — try again',
-        icon: LucideIcons.alertCircle,
-        iconColor: VinRColors.gold,
-      );
     }
   }
 
-  void _onVoicePressCancel() async {
-    await _recorder.cancel();
-    if (mounted) setState(() => _isDictating = false);
+  String _moodIntToString(dynamic m) {
+    if (m == 5) return 'Energized';
+    if (m == 4) return 'Balanced';
+    if (m == 3) return 'Calm';
+    if (m == 2) return 'Reflective';
+    return 'Balanced';
   }
 
-  void _saveEntry() {
+  void _saveEntry() async {
     final g1 = _g1Controller.text.trim();
     final g2 = _g2Controller.text.trim();
     final g3 = _g3Controller.text.trim();
@@ -133,22 +106,23 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
     final items = [if (g1.isNotEmpty) g1, if (g2.isNotEmpty) g2, if (g3.isNotEmpty) g3];
 
-    setState(() {
-      _savedEntries.insert(0, {
-        'id': 'entry_${DateTime.now().millisecondsSinceEpoch}',
-        'date': 'Today, ${_formatCurrentTime()}',
-        'mood': _selectedMood,
-        'items': items.isNotEmpty ? items : ['Logged personal reflection'],
-        'note': note.isNotEmpty ? note : 'Reflected on personal growth and daily wins.',
-        'tags': ['Daily Gratitude', _selectedMood],
-        'aiReflection': 'Gratitude entry saved! Building daily self-reflection strengthens emotional resilience and focus.'
-      });
+    // Optimistic local add
+    final tempEntry = {
+      'id': 'entry_${DateTime.now().millisecondsSinceEpoch}',
+      'date': 'Today, ${_formatCurrentTime()}',
+      'mood': _selectedMood,
+      'items': items.isNotEmpty ? items : ['Logged personal reflection'],
+      'note': note.isNotEmpty ? note : 'Reflected on personal growth and daily wins.',
+      'tags': ['Daily Gratitude', _selectedMood],
+      'aiReflection': 'Gratitude entry saved! Building daily self-reflection strengthens emotional resilience and focus.',
+    };
 
+    setState(() {
+      _savedEntries.insert(0, tempEntry);
       _g1Controller.clear();
       _g2Controller.clear();
       _g3Controller.clear();
       _reflectionController.clear();
-      _isDictating = false;
       _viewMode = 'entries';
     });
 
@@ -158,9 +132,21 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       icon: LucideIcons.checkCircle2,
       iconColor: VinRColors.gold,
     );
+
+    // Backend sync
+    final result = await _journalRepo.createEntry(
+      gratitudeItems: items,
+      reflectionText: note,
+      mood: _selectedMood,
+    );
+
+    if (result != null && mounted) {
+      _loadEntries();
+    }
   }
 
-  void _deleteEntry(Map<String, dynamic> entry) {
+  void _deleteEntry(Map<String, dynamic> entry) async {
+    final id = entry['id'] as String;
     setState(() {
       _savedEntries.remove(entry);
     });
@@ -170,6 +156,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       icon: LucideIcons.trash2,
       iconColor: VinRColors.crimson,
     );
+
+    if (!id.startsWith('entry_')) {
+      await _journalRepo.deleteEntry(id);
+    }
   }
 
   String _formatCurrentTime() {
@@ -245,79 +235,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                         ],
                       ),
                     ),
-
-                    // Voice Dictation — Hold to Record
-                    GestureDetector(
-                      onLongPressStart: (_) => _onVoicePressStart(),
-                      onLongPressEnd: (_) => _onVoicePressEnd(),
-                      onLongPressCancel: _onVoicePressCancel,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: _isDictating ? VinRColors.crimson.withValues(alpha: 0.20) : activeGold.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: _isDictating ? VinRColors.crimson : activeGold,
-                            width: _isDictating ? 1.5 : 1,
-                          ),
-                          boxShadow: isLight
-                              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]
-                              : [],
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              _isTranscribing ? LucideIcons.loader : (_isDictating ? LucideIcons.micOff : LucideIcons.mic),
-                              color: _isDictating ? VinRColors.crimson : activeGold,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _isTranscribing ? 'Transcribing...' : (_isDictating ? 'Release to Stop' : 'Hold to Speak'),
-                              style: TextStyle(
-                                color: _isDictating ? VinRColors.crimson : activeGold,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
-
-                // Live Recording / Transcribing Status Bar
-                if (_isDictating || _isTranscribing) ...[
-                  GlassContainer(
-                    color: _isTranscribing ? VinRColors.sapphireGlow : VinRColors.crimsonGlow,
-                    border: Border.all(color: _isTranscribing ? VinRColors.sapphire : VinRColors.crimson),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              _isTranscribing ? LucideIcons.loader : LucideIcons.mic,
-                              color: _isTranscribing ? VinRColors.sapphire : VinRColors.crimson,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              _isTranscribing ? 'AI Transcribing your voice...' : 'Listening — release button to transcribe',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        if (_isDictating)
-                          AudioWaveformVisualizer(isPlaying: true, barColor: VinRColors.crimson),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
 
                 // Navigation View Toggle Bar
                 Row(
@@ -492,7 +412,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   const SizedBox(height: 18),
 
                   const SectionHeader(
-                    title: 'PERSONAL REFLECTION & VOICE NOTES',
+                    title: 'PERSONAL REFLECTION',
                     icon: LucideIcons.fileText,
                     iconColor: VinRColors.sapphire,
                   ),
@@ -504,7 +424,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                           maxLines: 4,
                           style: TextStyle(color: primaryTextColor),
                           decoration: InputDecoration(
-                            hintText: 'Write thoughts or tap Voice Input above to dictate your reflection...',
+                            hintText: 'Write your thoughts and reflections...',
                             hintStyle: TextStyle(color: mutedTextColor),
                             border: InputBorder.none,
                           ),
@@ -539,7 +459,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                     iconColor: VinRColors.goldLight,
                   ),
 
-                  if (filteredEntries.isEmpty) ...[
+                  if (_isLoading)
+                    const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (filteredEntries.isEmpty) ...[
                     Center(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 40),
@@ -549,7 +476,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                             const SizedBox(height: 12),
                             Text('No Journal Entries Yet', style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor)),
                             const SizedBox(height: 4),
-                            Text('Tap Voice Input or Write Entry above to log your first reflection.', style: VinRTypography.caption.copyWith(color: mutedTextColor), textAlign: TextAlign.center),
+                            Text('Write Entry above to log your first reflection.', style: VinRTypography.caption.copyWith(color: mutedTextColor), textAlign: TextAlign.center),
                           ],
                         ),
                       ),

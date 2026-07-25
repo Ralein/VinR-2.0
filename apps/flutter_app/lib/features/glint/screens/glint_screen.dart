@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../../../core/theme/theme_context.dart';
 import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
 import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/glass_container.dart';
+import '../../../core/widgets/vinr_toast.dart';
 
 class GlintScreen extends StatefulWidget {
   const GlintScreen({super.key});
@@ -42,6 +44,10 @@ class _GlintScreenState extends State<GlintScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final primaryTextColor = context.textColor;
+    final mutedTextColor = context.textMutedColor;
+    final activeGold = context.goldColor;
+
     return Scaffold(
       body: AmbientBackground(
         child: SafeArea(
@@ -55,32 +61,35 @@ class _GlintScreenState extends State<GlintScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(LucideIcons.flame, color: VinRColors.gold, size: 24),
+                        Icon(LucideIcons.flame, color: activeGold, size: 24),
                         const SizedBox(width: 8),
-                        Text('Glint', style: VinRTypography.h1.copyWith(fontSize: 26)),
+                        Text('Glint', style: VinRTypography.h1.copyWith(fontSize: 26, color: primaryTextColor)),
                         const SizedBox(width: 10),
                         GestureDetector(
                           onTap: () => setState(() => _showSettings = !_showSettings),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: VinRColors.goldMuted,
+                              color: activeGold.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: VinRColors.borderGold),
+                              border: Border.all(color: activeGold.withValues(alpha: 0.3)),
                             ),
                             child: Text(
                               _selectedTopic,
-                              style: VinRTypography.caption.copyWith(color: VinRColors.goldLight, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: activeGold, fontSize: 11, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
                       ],
                     ),
                     IconButton(
-                      icon: const Icon(LucideIcons.refreshCw, color: VinRColors.textMuted, size: 20),
+                      icon: Icon(LucideIcons.refreshCw, color: mutedTextColor, size: 20),
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Feed refreshed!')),
+                        VinRToast.show(
+                          context,
+                          message: 'Feed refreshed!',
+                          icon: LucideIcons.refreshCw,
+                          iconColor: activeGold,
                         );
                       },
                     ),
@@ -92,11 +101,11 @@ class _GlintScreenState extends State<GlintScreen> {
               if (_showSettings) ...[
                 Container(
                   padding: const EdgeInsets.all(16),
-                  color: VinRColors.surface,
+                  color: context.surfaceColor,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('PERSPECTIVE TUNING', style: VinRTypography.label),
+                      Text('PERSPECTIVE TUNING', style: VinRTypography.label.copyWith(color: activeGold)),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
@@ -104,9 +113,9 @@ class _GlintScreenState extends State<GlintScreen> {
                           final isSel = _selectedTopic == topic;
                           return ChoiceChip(
                             selected: isSel,
-                            label: Text(topic, style: TextStyle(color: isSel ? Colors.black : VinRColors.textPrimary)),
-                            selectedColor: VinRColors.gold,
-                            backgroundColor: VinRColors.voidBg,
+                            label: Text(topic, style: TextStyle(color: isSel ? Colors.black : primaryTextColor)),
+                            selectedColor: activeGold,
+                            backgroundColor: context.surfaceColor,
                             onSelected: (_) {
                               setState(() {
                                 _selectedTopic = topic;
@@ -128,8 +137,10 @@ class _GlintScreenState extends State<GlintScreen> {
                   itemCount: _glints.length,
                   itemBuilder: (context, index) {
                     final item = _glints[index];
+                    final color = item['color'] as Color;
+
                     return Container(
-                      margin: const EdgeInsets.all(20),
+                      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                       child: GlassContainer(
                         padding: const EdgeInsets.all(20),
                         child: Column(
@@ -141,38 +152,38 @@ class _GlintScreenState extends State<GlintScreen> {
                                 padding: const EdgeInsets.all(24),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: (item['color'] as Color).withValues(alpha: 0.15),
-                                  border: Border.all(color: item['color'] as Color, width: 2),
+                                  color: color.withValues(alpha: 0.15),
+                                  border: Border.all(color: color, width: 2),
                                 ),
-                                child: Icon(item['icon'] as IconData, color: item['color'] as Color, size: 54),
+                                child: Icon(item['icon'] as IconData, color: color, size: 54),
                               ),
                             ),
                             const Spacer(),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: (item['color'] as Color).withValues(alpha: 0.2),
+                                color: color.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Text(item['tag'] as String, style: TextStyle(color: item['color'] as Color, fontSize: 11, fontWeight: FontWeight.bold)),
+                              child: Text(item['tag'] as String, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
                             ),
                             const SizedBox(height: 8),
-                            Text(item['title'] as String, style: VinRTypography.h3),
+                            Text(item['title'] as String, style: VinRTypography.h3.copyWith(color: primaryTextColor)),
                             const SizedBox(height: 12),
                             Row(
                               children: [
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: VinRColors.borderLight,
+                                    color: activeGold.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: Text(item['channel'] as String, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                                  child: Text(item['channel'] as String, style: TextStyle(color: activeGold, fontSize: 12, fontWeight: FontWeight.bold)),
                                 ),
                                 const SizedBox(width: 12),
-                                const Icon(LucideIcons.music, color: VinRColors.textMuted, size: 14),
+                                Icon(LucideIcons.music, color: mutedTextColor, size: 14),
                                 const SizedBox(width: 4),
-                                Text('Original Audio', style: VinRTypography.caption),
+                                Text('Original Audio', style: TextStyle(color: mutedTextColor, fontSize: 12)),
                               ],
                             ),
                           ],

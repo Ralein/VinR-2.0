@@ -6,7 +6,9 @@ import '../../../core/theme/vinr_colors.dart';
 import '../../../core/theme/vinr_typography.dart';
 import '../../../core/widgets/ambient_background.dart';
 import '../../../core/widgets/glass_container.dart';
+import '../../../core/widgets/gold_button.dart';
 import '../../../core/widgets/vinr_toast.dart';
+import '../../../core/repositories/therapist_repository.dart';
 import '../models/therapist_model.dart';
 
 class TherapistDirectoryScreen extends StatefulWidget {
@@ -18,8 +20,10 @@ class TherapistDirectoryScreen extends StatefulWidget {
 
 class _TherapistDirectoryScreenState extends State<TherapistDirectoryScreen> {
   String _selectedCategory = 'All';
+  bool _isLoading = false;
+  final _therapistRepo = TherapistRepository();
 
-  final List<TherapistModel> _therapists = [
+  List<TherapistModel> _therapists = [
     TherapistModel(
       id: 't1',
       name: 'Dr. Sarah Jenkins',
@@ -66,6 +70,46 @@ class _TherapistDirectoryScreenState extends State<TherapistDirectoryScreen> {
     ),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadDirectory();
+  }
+
+  Future<void> _loadDirectory() async {
+    setState(() => _isLoading = true);
+    final data = await _therapistRepo.getTherapistDirectory(
+      specialty: _selectedCategory == 'All' ? null : _selectedCategory.toLowerCase(),
+    );
+    if (data != null && mounted) {
+      final providers = data['providers'] as List?;
+      if (providers != null && providers.isNotEmpty) {
+        setState(() {
+          _isLoading = false;
+          _therapists = providers.map((p) {
+            final m = p as Map<String, dynamic>;
+            final specialties = (m['specialties'] as List?)?.join(', ') ?? 'Wellness & Therapy';
+            return TherapistModel(
+              id: m['id'] ?? 't_${DateTime.now().millisecondsSinceEpoch}',
+              name: m['name'] ?? 'Therapy Provider',
+              title: m['type'] == 'online' ? 'Online Care Provider' : 'Directory Provider',
+              specialization: specialties,
+              rating: 4.90,
+              reviewsCount: 120,
+              avatarUrl: '',
+              hourlyRate: 120.0,
+              availableSlots: ['Today at 04:00 PM', 'Tomorrow at 10:00 AM'],
+            );
+          }).toList();
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } else {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   void _showBookingModal(TherapistModel therapist) {
     String selectedSlot = therapist.availableSlots.first;
     String selectedType = 'Video Consultation';
@@ -103,81 +147,84 @@ class _TherapistDirectoryScreenState extends State<TherapistDirectoryScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 26,
-                            backgroundColor: context.goldMutedColor,
-                            child: Icon(LucideIcons.userCheck, color: activeGold, size: 24),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(therapist.name, style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor), overflow: TextOverflow.ellipsis),
-                                Text(therapist.title, style: TextStyle(color: mutedTextColor, fontSize: 12), overflow: TextOverflow.ellipsis),
-                              ],
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Book Session with ${therapist.name}',
+                        style: VinRTypography.h2.copyWith(color: primaryTextColor),
+                      ),
+                      Text(
+                        therapist.title,
+                        style: VinRTypography.caption.copyWith(color: mutedTextColor),
                       ),
                       const SizedBox(height: 20),
 
-                      Text('SELECT SESSION TYPE', style: VinRTypography.label.copyWith(color: mutedTextColor, fontWeight: FontWeight.bold)),
+                      Text('SELECT CONSULTATION TYPE', style: VinRTypography.label.copyWith(color: activeGold)),
                       const SizedBox(height: 8),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: ['Video Consultation', 'Audio Session', 'In-Person'].map((type) {
-                            final isSel = selectedType == type;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: ChoiceChip(
-                                selected: isSel,
-                                label: Text(type, style: TextStyle(color: isSel ? Colors.black : primaryTextColor, fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
-                                selectedColor: activeGold,
-                                backgroundColor: context.surfaceColor,
-                                onSelected: (_) => setModalState(() => selectedType = type),
+                      Row(
+                        children: ['Video Consultation', 'Audio Call', 'In-App Chat'].map((type) {
+                          final isSel = selectedType == type;
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: GestureDetector(
+                                onTap: () => setModalState(() => selectedType = type),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: isSel ? activeGold.withValues(alpha: 0.18) : context.surfaceColor,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSel ? activeGold : context.borderColor,
+                                      width: isSel ? 1.5 : 1,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      type.split(' ').first,
+                                      style: TextStyle(
+                                        color: isSel ? activeGold : primaryTextColor,
+                                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
-                            );
-                          }).toList(),
-                        ),
+                            ),
+                          );
+                        }).toList(),
                       ),
                       const SizedBox(height: 20),
 
-                      Text('AVAILABLE TIME SLOTS', style: VinRTypography.label.copyWith(color: mutedTextColor, fontWeight: FontWeight.bold)),
+                      Text('AVAILABLE TIME SLOTS', style: VinRTypography.label.copyWith(color: activeGold)),
                       const SizedBox(height: 8),
                       Column(
                         children: therapist.availableSlots.map((slot) {
                           final isSel = selectedSlot == slot;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8),
-                            child: InkWell(
+                            child: GestureDetector(
                               onTap: () => setModalState(() => selectedSlot = slot),
-                              borderRadius: BorderRadius.circular(14),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: isSel ? activeGold.withValues(alpha: 0.15) : context.surfaceColor,
                                   borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: isSel ? activeGold : context.borderColor, width: isSel ? 1.5 : 1),
+                                  border: Border.all(
+                                    color: isSel ? activeGold : context.borderColor,
+                                    width: isSel ? 1.5 : 1,
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Expanded(
-                                      child: Row(
-                                        children: [
-                                          Icon(LucideIcons.calendar, size: 16, color: isSel ? activeGold : mutedTextColor),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Text(slot, style: TextStyle(color: primaryTextColor, fontWeight: isSel ? FontWeight.bold : FontWeight.normal, fontSize: 13), overflow: TextOverflow.ellipsis),
-                                          ),
-                                        ],
-                                      ),
+                                    Row(
+                                      children: [
+                                        Icon(LucideIcons.clock, size: 16, color: isSel ? activeGold : mutedTextColor),
+                                        const SizedBox(width: 8),
+                                        Text(slot, style: TextStyle(color: isSel ? activeGold : primaryTextColor, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
+                                      ],
                                     ),
-                                    if (isSel) Icon(LucideIcons.checkCircle2, color: activeGold, size: 18),
+                                    if (isSel) Icon(LucideIcons.checkCircle2, size: 18, color: activeGold),
                                   ],
                                 ),
                               ),
@@ -187,22 +234,17 @@ class _TherapistDirectoryScreenState extends State<TherapistDirectoryScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      ElevatedButton(
+                      GoldButton(
+                        text: 'Confirm Booking • \$${therapist.hourlyRate.toInt()}',
                         onPressed: () {
                           Navigator.pop(context);
                           VinRToast.show(
                             context,
-                            message: '$selectedType booked with ${therapist.name} for $selectedSlot!',
-                            icon: LucideIcons.calendarCheck,
+                            message: 'Session Booked for $selectedSlot!',
+                            icon: LucideIcons.checkCircle2,
                             iconColor: VinRColors.emerald,
                           );
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: activeGold,
-                          minimumSize: const Size.fromHeight(48),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: Text('Confirm Booking (\$${therapist.hourlyRate.toInt()})', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -221,76 +263,77 @@ class _TherapistDirectoryScreenState extends State<TherapistDirectoryScreen> {
     final mutedTextColor = context.textMutedColor;
     final activeGold = context.goldColor;
 
-    final categories = ['All', 'Anxiety & CBT', 'Burnout & Focus', 'Mindfulness & Sleep'];
-
-    final filteredTherapists = _selectedCategory == 'All'
-        ? _therapists
-        : _therapists.where((t) => t.specialization.contains(_selectedCategory.split(' ').first)).toList();
-
     return Scaffold(
       body: AmbientBackground(
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 140),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Bar
                 Row(
                   children: [
                     IconButton(
-                      icon: Icon(Icons.arrow_back_ios_new_rounded, color: primaryTextColor, size: 20),
+                      icon: Icon(LucideIcons.arrowLeft, color: primaryTextColor),
                       onPressed: () => context.pop(),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        'Licensed Specialist Directory',
-                        style: VinRTypography.h3.copyWith(color: primaryTextColor),
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('THERAPIST DIRECTORY', style: VinRTypography.label.copyWith(color: activeGold)),
+                          Text('Professional Care & Coaching', style: VinRTypography.h2.copyWith(color: primaryTextColor)),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-                // Category Filter Chips Bar
+                // Specialty filter pills
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: categories.map((cat) {
+                    children: ['All', 'Anxiety', 'CBT', 'Burnout', 'Sleep', 'Stoic'].map((cat) {
                       final isSel = _selectedCategory == cat;
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          selected: isSel,
-                          label: Text(cat, style: TextStyle(color: isSel ? Colors.black : primaryTextColor, fontWeight: isSel ? FontWeight.bold : FontWeight.normal, fontSize: 12)),
-                          selectedColor: activeGold,
-                          backgroundColor: context.surfaceColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: isSel ? activeGold : context.borderColor),
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() => _selectedCategory = cat);
+                            _loadDirectory();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSel ? activeGold.withValues(alpha: 0.18) : context.surfaceColor,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isSel ? activeGold : context.borderColor,
+                                width: isSel ? 1.5 : 1,
+                              ),
+                            ),
+                            child: Text(
+                              cat,
+                              style: TextStyle(
+                                color: isSel ? activeGold : primaryTextColor,
+                                fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                fontSize: 12,
+                              ),
+                            ),
                           ),
-                          onSelected: (_) => setState(() => _selectedCategory = cat),
                         ),
                       );
                     }).toList(),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-                Text(
-                  'CERTIFIED THERAPISTS & COACHES (${filteredTherapists.length})',
-                  style: VinRTypography.label.copyWith(color: mutedTextColor),
-                ),
-                const SizedBox(height: 12),
-
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: filteredTherapists.length,
-                    itemBuilder: (context, index) {
-                      final therapist = filteredTherapists[index];
-                      return Padding(
+                if (_isLoading)
+                  const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()))
+                else
+                  ..._therapists.map((t) => Padding(
                         padding: const EdgeInsets.only(bottom: 14),
                         child: GlassContainer(
                           child: Column(
@@ -298,86 +341,53 @@ class _TherapistDirectoryScreenState extends State<TherapistDirectoryScreen> {
                             children: [
                               Row(
                                 children: [
-                                  Stack(
-                                    alignment: Alignment.bottomRight,
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 28,
-                                        backgroundColor: context.goldMutedColor,
-                                        child: Icon(LucideIcons.userCheck, color: activeGold, size: 26),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.all(3),
-                                        decoration: BoxDecoration(
-                                          color: VinRColors.emerald,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(color: context.surfaceColor, width: 1.5),
-                                        ),
-                                        child: const Icon(LucideIcons.check, size: 10, color: Colors.white),
-                                      ),
-                                    ],
+                                  CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: activeGold.withValues(alpha: 0.2),
+                                    child: Icon(LucideIcons.userCheck, color: activeGold, size: 24),
                                   ),
-                                  const SizedBox(width: 14),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(therapist.name, style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor), overflow: TextOverflow.ellipsis),
-                                        Text(therapist.title, style: VinRTypography.caption.copyWith(color: mutedTextColor), overflow: TextOverflow.ellipsis),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Icon(Icons.star_rounded, color: activeGold, size: 16),
-                                            const SizedBox(width: 4),
-                                            Expanded(
-                                              child: Text(
-                                                '${therapist.rating} (${therapist.reviewsCount} verified reviews)',
-                                                style: VinRTypography.caption.copyWith(color: mutedTextColor),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                        Text(t.name, style: TextStyle(fontWeight: FontWeight.bold, color: primaryTextColor, fontSize: 16)),
+                                        Text(t.title, style: TextStyle(color: mutedTextColor, fontSize: 12)),
                                       ],
                                     ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      const Icon(LucideIcons.star, color: VinRColors.gold, size: 14),
+                                      const SizedBox(width: 4),
+                                      Text('${t.rating}', style: TextStyle(fontWeight: FontWeight.bold, color: primaryTextColor, fontSize: 13)),
+                                    ],
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              Text('SPECIALIZATION', style: VinRTypography.label.copyWith(color: mutedTextColor)),
-                              const SizedBox(height: 2),
-                              Text(therapist.specialization, style: VinRTypography.bodySm.copyWith(color: primaryTextColor)),
-                              const SizedBox(height: 16),
+                              Text(t.specialization, style: TextStyle(color: activeGold, fontSize: 12, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 14),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Expanded(
-                                    child: Text(
-                                      '\$${therapist.hourlyRate.toInt()} / 50-min session',
-                                      style: VinRTypography.body.copyWith(fontWeight: FontWeight.bold, color: activeGold),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  ElevatedButton.icon(
-                                    icon: const Icon(LucideIcons.calendar, size: 14),
-                                    label: const Text('Book Session', style: TextStyle(fontWeight: FontWeight.bold)),
-                                    onPressed: () => _showBookingModal(therapist),
+                                  Text('\$${t.hourlyRate.toInt()} / session', style: TextStyle(fontWeight: FontWeight.bold, color: primaryTextColor, fontSize: 14)),
+                                  ElevatedButton(
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: activeGold,
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                      foregroundColor: Colors.black,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                     ),
+                                    onPressed: () => _showBookingModal(t),
+                                    child: const Text('Book Session', style: TextStyle(fontWeight: FontWeight.bold)),
                                   ),
                                 ],
                               ),
                             ],
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
+                      )),
               ],
             ),
           ),

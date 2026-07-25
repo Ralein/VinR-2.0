@@ -1,17 +1,29 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'storage_service.dart';
 
 class ApiService {
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://192.168.0.132:8000/api/v1/',
-  );
+  static String get defaultBaseUrl {
+    const envUrl = String.fromEnvironment('API_BASE_URL');
+    if (envUrl.isNotEmpty) return envUrl;
+
+    if (!kIsWeb) {
+      if (Platform.isAndroid) {
+        return 'http://10.0.2.2:8000/api/v1/';
+      } else if (Platform.isIOS) {
+        return 'http://127.0.0.1:8000/api/v1/';
+      }
+    }
+    return 'http://192.168.0.132:8000/api/v1/';
+  }
+
   late final Dio dio;
 
-  ApiService() {
+  ApiService([String? customBaseUrl]) {
     dio = Dio(
       BaseOptions(
-        baseUrl: baseUrl,
+        baseUrl: customBaseUrl ?? defaultBaseUrl,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
         headers: {

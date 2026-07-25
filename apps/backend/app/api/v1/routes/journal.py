@@ -179,3 +179,26 @@ async def search_journal_entries(
     )
 
     return result.scalars().all()
+
+
+@router.delete("/{entry_id}")
+async def delete_journal_entry(
+    entry_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a journal entry by ID."""
+    user_id = current_user["sub"]
+    result = await db.execute(
+        select(JournalEntry)
+        .where(JournalEntry.id == entry_id)
+        .where(JournalEntry.user_id == user_id)
+    )
+    entry = result.scalar_one_or_none()
+    if not entry:
+        return {"status": "not_found"}
+
+    await db.delete(entry)
+    await db.flush()
+    return {"status": "deleted", "id": entry_id}
+
