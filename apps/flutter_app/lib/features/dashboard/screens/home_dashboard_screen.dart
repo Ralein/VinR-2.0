@@ -242,58 +242,8 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                       }
                     },
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                 ],
-
-                // Mood & Energy Pulse Selector
-                const SectionHeader(
-                  title: 'DAILY MOOD & ENERGY PULSE',
-                  icon: LucideIcons.heartPulse,
-                  iconColor: VinRColors.crimson,
-                ),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _moodOptions.map((m) {
-                      final isSel = _selectedMood == m['label'];
-                      final color = m['color'] as Color;
-                      final icon = m['icon'] as IconData;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: GestureDetector(
-                          onTap: () => _onMoodSelect(m['label'] as String, icon, color),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: isSel ? color.withValues(alpha: 0.18) : context.surfaceColor,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isSel ? color : context.borderColor,
-                                width: isSel ? 1.5 : 1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(icon, size: 14, color: isSel ? color : mutedTextColor),
-                                const SizedBox(width: 6),
-                                Text(
-                                  m['label'] as String,
-                                  style: TextStyle(
-                                    color: isSel ? primaryTextColor : mutedTextColor,
-                                    fontSize: 12,
-                                    fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(height: 20),
 
                 // Quick Mindfulness & Growth Micro-Tools Grid
                 const SectionHeader(

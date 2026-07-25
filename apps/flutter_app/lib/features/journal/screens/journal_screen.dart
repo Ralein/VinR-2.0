@@ -20,7 +20,6 @@ class JournalScreen extends ConsumerStatefulWidget {
 
 class _JournalScreenState extends ConsumerState<JournalScreen> {
   String _viewMode = 'write'; // 'write' | 'entries'
-  String _selectedMood = 'Balanced';
   String _searchQuery = '';
   bool _isLoading = false;
 
@@ -32,13 +31,6 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   final _reflectionController = TextEditingController();
 
   final List<Map<String, dynamic>> _savedEntries = [];
-
-  final List<Map<String, dynamic>> _moodOptions = [
-    {'name': 'Energized', 'icon': LucideIcons.zap, 'color': VinRColors.gold},
-    {'name': 'Balanced', 'icon': LucideIcons.smile, 'color': VinRColors.emerald},
-    {'name': 'Calm', 'icon': LucideIcons.wind, 'color': VinRColors.sapphire},
-    {'name': 'Reflective', 'icon': LucideIcons.sparkles, 'color': VinRColors.lavender},
-  ];
 
   @override
   void initState() {
@@ -68,24 +60,15 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             _savedEntries.add({
               'id': item['id'] ?? 'entry_${DateTime.now().millisecondsSinceEpoch}',
               'date': item['date'] ?? 'Today, ${_formatCurrentTime()}',
-              'mood': _moodIntToString(item['mood_at_entry']),
               'items': gratitudeList.isNotEmpty ? gratitudeList : ['Logged personal reflection'],
               'note': item['reflection_text'] ?? 'Reflected on personal growth and daily wins.',
-              'tags': ['Daily Gratitude', _moodIntToString(item['mood_at_entry'])],
+              'tags': ['Daily Gratitude'],
               'aiReflection': item['ai_response'] ?? 'Gratitude entry saved! Building daily self-reflection strengthens emotional resilience.',
             });
           }
         }
       });
     }
-  }
-
-  String _moodIntToString(dynamic m) {
-    if (m == 5) return 'Energized';
-    if (m == 4) return 'Balanced';
-    if (m == 3) return 'Calm';
-    if (m == 2) return 'Reflective';
-    return 'Balanced';
   }
 
   void _saveEntry() async {
@@ -110,10 +93,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final tempEntry = {
       'id': 'entry_${DateTime.now().millisecondsSinceEpoch}',
       'date': 'Today, ${_formatCurrentTime()}',
-      'mood': _selectedMood,
       'items': items.isNotEmpty ? items : ['Logged personal reflection'],
       'note': note.isNotEmpty ? note : 'Reflected on personal growth and daily wins.',
-      'tags': ['Daily Gratitude', _selectedMood],
+      'tags': ['Daily Gratitude'],
       'aiReflection': 'Gratitude entry saved! Building daily self-reflection strengthens emotional resilience and focus.',
     };
 
@@ -137,7 +119,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final result = await _journalRepo.createEntry(
       gratitudeItems: items,
       reflectionText: note,
-      mood: _selectedMood,
+      mood: 'Balanced',
     );
 
     if (result != null && mounted) {
@@ -194,52 +176,51 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Badge Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: activeGold.withValues(alpha: isLight ? 0.12 : 0.2),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: activeGold.withValues(alpha: isLight ? 0.3 : 0.4),
+                // Premium Top Header Banner
+                GlassContainer(
+                  padding: const EdgeInsets.all(18),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: activeGold.withValues(alpha: 0.18),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: activeGold.withValues(alpha: 0.4)),
+                        ),
+                        child: Icon(LucideIcons.bookOpen, color: activeGold, size: 24),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'DAILY GRATITUDE',
+                              style: VinRTypography.label.copyWith(
+                                color: activeGold,
+                                fontSize: 11,
+                                letterSpacing: 1.2,
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(LucideIcons.bookOpen, size: 12, color: activeGold),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'DAILY REFLECTION',
-                                  style: TextStyle(
-                                    color: activeGold,
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(height: 2),
+                            Text(
+                              'Mindful Reflections',
+                              style: VinRTypography.h2.copyWith(fontSize: 22, color: primaryTextColor),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text('GRATITUDE JOURNAL', style: VinRTypography.label.copyWith(color: mutedTextColor)),
-                          const SizedBox(height: 2),
-                          Text('Mindful Daily Reflections', style: VinRTypography.h1.copyWith(fontSize: 26, color: primaryTextColor)),
-                        ],
+                            Text(
+                              'Capture positivity & track daily growth',
+                              style: VinRTypography.caption.copyWith(color: mutedTextColor),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 20),
 
-                // Navigation View Toggle Bar
+                // Navigation View Toggle Tabs
                 Row(
                   children: [
                     Expanded(
@@ -247,15 +228,19 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                         onTap: () => setState(() => _viewMode = 'write'),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           decoration: BoxDecoration(
                             color: _viewMode == 'write'
-                                ? activeGold.withValues(alpha: 0.15)
+                                ? activeGold.withValues(alpha: 0.18)
                                 : (isLight ? Colors.white : VinRColors.surface),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: _viewMode == 'write' ? activeGold : (isLight ? const Color(0x1A000000) : VinRColors.border),
+                              width: _viewMode == 'write' ? 1.5 : 1,
                             ),
+                            boxShadow: _viewMode == 'write'
+                                ? [BoxShadow(color: activeGold.withValues(alpha: 0.15), blurRadius: 10)]
+                                : [],
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -267,6 +252,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: _viewMode == 'write' ? activeGold : mutedTextColor,
+                                  fontSize: 14,
                                 ),
                               ),
                             ],
@@ -280,15 +266,19 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                         onTap: () => setState(() => _viewMode = 'entries'),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           decoration: BoxDecoration(
                             color: _viewMode == 'entries'
-                                ? activeGold.withValues(alpha: 0.15)
+                                ? activeGold.withValues(alpha: 0.18)
                                 : (isLight ? Colors.white : VinRColors.surface),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: _viewMode == 'entries' ? activeGold : (isLight ? const Color(0x1A000000) : VinRColors.border),
+                              width: _viewMode == 'entries' ? 1.5 : 1,
                             ),
+                            boxShadow: _viewMode == 'entries'
+                                ? [BoxShadow(color: activeGold.withValues(alpha: 0.15), blurRadius: 10)]
+                                : [],
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -300,6 +290,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: _viewMode == 'entries' ? activeGold : mutedTextColor,
+                                  fontSize: 14,
                                 ),
                               ),
                             ],
@@ -313,119 +304,133 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
                 // WRITE MODE
                 if (_viewMode == 'write') ...[
-                  // Mood Selector Section
-                  const SectionHeader(
-                    title: 'HOW ARE YOU FEELING TODAY?',
-                    icon: LucideIcons.heartHandshake,
-                    iconColor: VinRColors.goldLight,
-                  ),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _moodOptions.map((opt) {
-                        final isSelected = _selectedMood == opt['name'];
-                        final color = opt['color'] as Color;
-
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: GestureDetector(
-                            onTap: () => setState(() => _selectedMood = opt['name'] as String),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: isSelected ? color.withValues(alpha: 0.18) : (isLight ? Colors.white : VinRColors.surface),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: isSelected ? color : (isLight ? const Color(0x1A000000) : VinRColors.border),
-                                  width: isSelected ? 1.5 : 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(opt['icon'] as IconData, size: 16, color: isSelected ? color : mutedTextColor),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    opt['name'] as String,
-                                    style: TextStyle(
-                                      color: isSelected ? color : primaryTextColor,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
                   const SectionHeader(
                     title: 'DAILY GRATITUDE PROMPTS',
                     icon: LucideIcons.sparkles,
                     iconColor: VinRColors.goldLight,
                   ),
+
+                  // Prompt 1
                   GlassContainer(
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('1. Something that made you smile today', style: VinRTypography.bodySm.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor)),
-                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(LucideIcons.smile, size: 18, color: VinRColors.gold),
+                            const SizedBox(width: 8),
+                            Text(
+                              '1. Something that made you smile today',
+                              style: VinRTypography.bodySm.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
                         TextField(
                           controller: _g1Controller,
-                          style: TextStyle(color: primaryTextColor),
+                          style: TextStyle(color: primaryTextColor, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: 'e.g. Morning coffee, clear weather...',
-                            hintStyle: TextStyle(color: mutedTextColor),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-
-                        Text('2. A win or effort you are proud of', style: VinRTypography.bodySm.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor)),
-                        const SizedBox(height: 6),
-                        TextField(
-                          controller: _g2Controller,
-                          style: TextStyle(color: primaryTextColor),
-                          decoration: InputDecoration(
-                            hintText: 'e.g. Completed morning routine...',
-                            hintStyle: TextStyle(color: mutedTextColor),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-
-                        Text('3. Someone you appreciate right now', style: VinRTypography.bodySm.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor)),
-                        const SizedBox(height: 6),
-                        TextField(
-                          controller: _g3Controller,
-                          style: TextStyle(color: primaryTextColor),
-                          decoration: InputDecoration(
-                            hintText: 'e.g. A supportive friend or colleague...',
-                            hintStyle: TextStyle(color: mutedTextColor),
+                            hintText: 'e.g. Morning coffee, warm sunshine, a warm message...',
+                            hintStyle: TextStyle(color: mutedTextColor.withValues(alpha: 0.7), fontSize: 13),
+                            border: InputBorder.none,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 12),
+
+                  // Prompt 2
+                  GlassContainer(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(LucideIcons.award, size: 18, color: VinRColors.emerald),
+                            const SizedBox(width: 8),
+                            Text(
+                              '2. A win or effort you are proud of',
+                              style: VinRTypography.bodySm.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _g2Controller,
+                          style: TextStyle(color: primaryTextColor, fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: 'e.g. Stayed focused on work, completed routine...',
+                            hintStyle: TextStyle(color: mutedTextColor.withValues(alpha: 0.7), fontSize: 13),
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Prompt 3
+                  GlassContainer(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(LucideIcons.heartHandshake, size: 18, color: VinRColors.sapphire),
+                            const SizedBox(width: 8),
+                            Text(
+                              '3. Someone you appreciate right now',
+                              style: VinRTypography.bodySm.copyWith(fontWeight: FontWeight.bold, color: primaryTextColor),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _g3Controller,
+                          style: TextStyle(color: primaryTextColor, fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: 'e.g. A supportive friend, mentor, or family member...',
+                            hintStyle: TextStyle(color: mutedTextColor.withValues(alpha: 0.7), fontSize: 13),
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
 
                   const SectionHeader(
-                    title: 'PERSONAL REFLECTION',
+                    title: 'PERSONAL REFLECTION & NOTES',
                     icon: LucideIcons.fileText,
                     iconColor: VinRColors.sapphire,
                   ),
                   GlassContainer(
+                    padding: const EdgeInsets.all(16),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Row(
+                          children: [
+                            Icon(LucideIcons.penTool, size: 16, color: activeGold),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Free Reflection',
+                              style: TextStyle(color: activeGold, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
                         TextField(
                           controller: _reflectionController,
                           maxLines: 4,
-                          style: TextStyle(color: primaryTextColor),
+                          style: TextStyle(color: primaryTextColor, fontSize: 14, height: 1.4),
                           decoration: InputDecoration(
-                            hintText: 'Write your thoughts and reflections...',
-                            hintStyle: TextStyle(color: mutedTextColor),
+                            hintText: 'Write your thoughts, insights, or reflections for today...',
+                            hintStyle: TextStyle(color: mutedTextColor.withValues(alpha: 0.7), fontSize: 13),
                             border: InputBorder.none,
                           ),
                         ),
@@ -435,7 +440,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   const SizedBox(height: 24),
 
                   GoldButton(
-                    text: 'Save Gratitude Journal Entry',
+                    text: 'Save Gratitude Journal Entry →',
                     onPressed: _saveEntry,
                   ),
                 ]
@@ -446,8 +451,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                     onChanged: (val) => setState(() => _searchQuery = val),
                     style: TextStyle(color: primaryTextColor),
                     decoration: InputDecoration(
-                      hintText: 'Search journal entries...',
-                      prefixIcon: const Icon(LucideIcons.search, size: 18),
+                      hintText: 'Search gratitude entries...',
+                      prefixIcon: Icon(LucideIcons.search, size: 18, color: mutedTextColor),
                       hintStyle: TextStyle(color: mutedTextColor),
                     ),
                   ),
@@ -496,45 +501,38 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(item['date'] as String, style: TextStyle(fontWeight: FontWeight.bold, color: activeGold, fontSize: 13)),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: activeGold.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Text(
-                                          item['mood'] as String? ?? 'Logged',
-                                          style: const TextStyle(color: VinRColors.emerald, fontSize: 10, fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: const Icon(LucideIcons.trash2, color: VinRColors.crimson, size: 16),
-                                        onPressed: () => _deleteEntry(item),
-                                        constraints: const BoxConstraints(),
-                                        padding: EdgeInsets.zero,
-                                        tooltip: 'Delete entry',
-                                      ),
-                                    ],
+                                  IconButton(
+                                    icon: const Icon(LucideIcons.trash2, color: VinRColors.crimson, size: 16),
+                                    onPressed: () => _deleteEntry(item),
+                                    constraints: const BoxConstraints(),
+                                    padding: EdgeInsets.zero,
+                                    tooltip: 'Delete entry',
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 10),
                               ...itemsList.map((itm) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 4),
+                                    padding: const EdgeInsets.only(bottom: 6),
                                     child: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('• ', style: TextStyle(color: VinRColors.gold, fontWeight: FontWeight.bold)),
+                                        const Icon(LucideIcons.checkCircle2, size: 14, color: VinRColors.gold),
+                                        const SizedBox(width: 8),
                                         Expanded(child: Text(itm, style: TextStyle(color: primaryTextColor, fontSize: 13, height: 1.3))),
                                       ],
                                     ),
                                   )),
                               if ((item['note'] as String).isNotEmpty) ...[
                                 const SizedBox(height: 8),
-                                Text(item['note'] as String, style: TextStyle(color: mutedTextColor, fontSize: 12.5, fontStyle: FontStyle.italic)),
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: isLight ? Colors.white.withValues(alpha: 0.6) : VinRColors.surface,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: context.borderColor),
+                                  ),
+                                  child: Text(item['note'] as String, style: TextStyle(color: mutedTextColor, fontSize: 12.5, fontStyle: FontStyle.italic)),
+                                ),
                               ],
                               const SizedBox(height: 12),
                               Wrap(
@@ -558,7 +556,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                                   decoration: BoxDecoration(
                                     color: isLight ? const Color(0xFFF5F2EC) : VinRColors.surface,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: activeGold.withValues(alpha: 0.2)),
+                                    border: Border.all(color: activeGold.withValues(alpha: 0.25)),
                                   ),
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,

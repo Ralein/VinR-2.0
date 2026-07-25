@@ -138,6 +138,16 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
   }
 
+  void addSystemNotification(String notificationText) {
+    final sysMsg = ChatMessageModel(
+      id: 'sys_${DateTime.now().millisecondsSinceEpoch}',
+      text: notificationText,
+      sender: MessageSender.system,
+      timestamp: DateTime.now(),
+    );
+    state = state.copyWith(messages: [...state.messages, sysMsg]);
+  }
+
   void clearMessages() {
     state = state.copyWith(messages: []);
   }

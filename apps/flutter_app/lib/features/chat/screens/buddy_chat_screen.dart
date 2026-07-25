@@ -235,6 +235,25 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
     _scrollToBottom();
   }
 
+  void _toggleVoiceMode([bool? newState]) {
+    final val = newState ?? !_voiceModeEnabled;
+    setState(() => _voiceModeEnabled = val);
+
+    final notificationText = val
+        ? '🎙️ Switched to Voice Mode — VinR Coach will read responses aloud'
+        : '🔇 Switched to Text Mode — Spoken replies muted';
+
+    ref.read(chatProvider.notifier).addSystemNotification(notificationText);
+
+    VinRToast.show(
+      context,
+      message: val ? 'Voice mode enabled' : 'Voice mode muted',
+      icon: val ? LucideIcons.volume2 : LucideIcons.volumeX,
+      iconColor: VinRColors.gold,
+    );
+    _scrollToBottom();
+  }
+
   // ── Audio Playback ─────────────────────────
 
   Future<void> _toggleAudioPlayback(ChatMessageModel msg) async {
@@ -334,14 +353,8 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
                 trailing: Switch(
                   value: _voiceModeEnabled,
                   onChanged: (val) {
-                    setState(() => _voiceModeEnabled = val);
                     Navigator.pop(ctx);
-                    VinRToast.show(
-                      ctx,
-                      message: val ? 'Voice mode enabled' : 'Voice mode muted',
-                      icon: val ? LucideIcons.volume2 : LucideIcons.volumeX,
-                      iconColor: ctx.goldColor,
-                    );
+                    _toggleVoiceMode(val);
                   },
                   activeThumbColor: ctx.goldColor,
                 ),
@@ -612,7 +625,7 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
 
           // Voice toggle
           GestureDetector(
-            onTap: () => setState(() => _voiceModeEnabled = !_voiceModeEnabled),
+            onTap: () => _toggleVoiceMode(),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               width: 38,
@@ -733,6 +746,43 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
       itemCount: chatState.messages.length,
       itemBuilder: (context, index) {
         final msg = chatState.messages[index] as ChatMessageModel;
+        if (msg.sender == MessageSender.system) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: activeGold.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: activeGold.withValues(alpha: 0.35),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.sparkles, size: 14, color: activeGold),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        msg.text,
+                        style: TextStyle(
+                          color: activeGold,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
         final isAi = msg.sender == MessageSender.ai;
         final isPlayingThis = _currentlyPlayingAudioId == msg.id;
 
