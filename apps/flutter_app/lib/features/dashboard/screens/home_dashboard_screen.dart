@@ -27,18 +27,10 @@ class HomeDashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
-  String _selectedMood = 'Calm';
   bool _isPlayingQuoteAudio = false;
   late final AudioPlayer _audioPlayer;
   final _checkinRepo = CheckinRepository();
   final _chatRepo = ChatRepository();
-
-  final List<Map<String, dynamic>> _moodOptions = [
-    {'label': 'Energized', 'icon': LucideIcons.zap, 'color': VinRColors.gold},
-    {'label': 'Calm', 'icon': LucideIcons.waves, 'color': VinRColors.emerald},
-    {'label': 'Anxious', 'icon': LucideIcons.wind, 'color': VinRColors.crimson},
-    {'label': 'Reflective', 'icon': LucideIcons.sparkles, 'color': VinRColors.sapphire},
-  ];
 
   static const String _dailyQuote = "We suffer more often in imagination than in reality. Master your thoughts, master your day.";
 
@@ -96,18 +88,6 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
         }
       }
     }
-  }
-
-  void _onMoodSelect(String mood, IconData icon, Color color) async {
-    setState(() => _selectedMood = mood);
-    VinRToast.show(
-      context,
-      message: 'Mood updated to $mood',
-      icon: icon,
-      iconColor: color,
-    );
-
-    await _checkinRepo.submitCheckin(mood: mood, note: 'Mood pulse: $mood');
   }
 
   String _getGreeting() {
@@ -231,7 +211,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                     text: 'Record Today\'s Check-in →',
                     onPressed: () async {
                       streakNotifier.checkInToday();
-                      await _checkinRepo.submitCheckin(mood: _selectedMood);
+                      await _checkinRepo.submitCheckin(mood: 'Calm');
                       if (context.mounted) {
                         VinRToast.show(
                           context,
