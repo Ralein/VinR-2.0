@@ -140,9 +140,8 @@ class TTSRequest(BaseModel):
 @router.post("/tts")
 async def generate_tts(
     request: TTSRequest,
-    current_user: Annotated[dict, Depends(get_current_user)],
 ):
-    """Generate TTS audio for arbitrary text (e.g. intro greetings)."""
+    """Generate TTS audio for arbitrary text (e.g. daily quotes, intro greetings)."""
     audio_bytes = await text_to_speech(request.text, persona=request.persona)
     if not audio_bytes:
         return {"audio_url": None}
