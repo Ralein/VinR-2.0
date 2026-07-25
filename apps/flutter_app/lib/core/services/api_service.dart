@@ -9,9 +9,8 @@ class ApiService {
     if (envUrl.isNotEmpty) return envUrl;
 
     if (!kIsWeb) {
-      if (Platform.isAndroid) {
-        return 'http://10.0.2.2:8000/api/v1/';
-      } else if (Platform.isIOS) {
+      if (Platform.isAndroid || Platform.isIOS) {
+        // ADB reverse on physical Android devices and iOS simulators route via 127.0.0.1:8000
         return 'http://127.0.0.1:8000/api/v1/';
       }
     }
@@ -24,8 +23,8 @@ class ApiService {
     dio = Dio(
       BaseOptions(
         baseUrl: customBaseUrl ?? defaultBaseUrl,
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 15),
+        connectTimeout: const Duration(seconds: 45),
+        receiveTimeout: const Duration(seconds: 45),
         headers: {
           'Content-Type': 'application/json',
         },

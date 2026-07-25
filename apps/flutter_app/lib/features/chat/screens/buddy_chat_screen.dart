@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -271,7 +272,13 @@ class _BuddyChatScreenState extends ConsumerState<BuddyChatScreen>
       }
       if (uri != null && uri.isNotEmpty) {
         try {
-          await _audioPlayer.play(UrlSource(uri));
+          if (uri.startsWith('data:')) {
+            final base64Str = uri.split(',').last;
+            final bytes = base64Decode(base64Str);
+            await _audioPlayer.play(BytesSource(bytes));
+          } else {
+            await _audioPlayer.play(UrlSource(uri));
+          }
           if (mounted) setState(() => _currentlyPlayingAudioId = msg.id);
         } catch (e) {
           debugPrint('Audio playback error: $e');

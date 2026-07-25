@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,15 +29,42 @@ class HomeDashboardScreen extends ConsumerStatefulWidget {
 
 class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
   bool _isPlayingQuoteAudio = false;
+  int _quoteIndex = 0;
   late final AudioPlayer _audioPlayer;
   final _checkinRepo = CheckinRepository();
   final _chatRepo = ChatRepository();
 
-  static const String _dailyQuote = "We suffer more often in imagination than in reality. Master your thoughts, master your day.";
+  static final List<Map<String, String>> _stoicQuotes = [
+    {
+      'quote': 'We suffer more often in imagination than in reality. Master your thoughts, master your day.',
+      'author': 'Seneca',
+    },
+    {
+      'quote': 'You have power over your mind - not outside events. Realize this, and you will find strength.',
+      'author': 'Marcus Aurelius',
+    },
+    {
+      'quote': 'No man is free who is not master of himself.',
+      'author': 'Epictetus',
+    },
+    {
+      'quote': 'Waste no more time arguing about what a good man should be. Be one.',
+      'author': 'Marcus Aurelius',
+    },
+    {
+      'quote': 'Difficulties strengthen the mind, as labor does the body.',
+      'author': 'Seneca',
+    },
+    {
+      'quote': 'If it is not right do not do it; if it is not true do not say it.',
+      'author': 'Marcus Aurelius',
+    },
+  ];
 
   @override
   void initState() {
     super.initState();
+    _quoteIndex = DateTime.now().day % _stoicQuotes.length;
     _audioPlayer = AudioPlayer();
     _audioPlayer.onPlayerComplete.listen((_) {
       if (mounted) setState(() => _isPlayingQuoteAudio = false);
@@ -47,6 +75,18 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
   void dispose() {
     _audioPlayer.dispose();
     super.dispose();
+  }
+
+  void _nextQuote() {
+    setState(() {
+      _quoteIndex = (_quoteIndex + 1) % _stoicQuotes.length;
+    });
+    VinRToast.show(
+      context,
+      message: 'New Stoic insight loaded',
+      icon: LucideIcons.sparkles,
+      iconColor: VinRColors.gold,
+    );
   }
 
   Future<void> _toggleQuoteAudio() async {
@@ -61,10 +101,19 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
         iconColor: VinRColors.gold,
       );
 
-      final audioUrl = await _chatRepo.generateTts(_dailyQuote, persona: 'stoic');
+      final currentQuoteObj = _stoicQuotes[_quoteIndex];
+      final textToSynthesize = "${currentQuoteObj['quote']} — ${currentQuoteObj['author']}";
+
+      final audioUrl = await _chatRepo.generateTts(textToSynthesize, persona: 'stoic');
       if (audioUrl != null && audioUrl.isNotEmpty) {
         try {
-          await _audioPlayer.play(UrlSource(audioUrl));
+          if (audioUrl.startsWith('data:')) {
+            final base64Str = audioUrl.split(',').last;
+            final bytes = base64Decode(base64Str);
+            await _audioPlayer.play(BytesSource(bytes));
+          } else {
+            await _audioPlayer.play(UrlSource(audioUrl));
+          }
           if (mounted) {
             setState(() => _isPlayingQuoteAudio = true);
             VinRToast.show(
@@ -81,7 +130,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
         if (mounted) {
           VinRToast.show(
             context,
-            message: 'Quote reflection audio ready',
+            message: 'Audio reflection ready',
             icon: LucideIcons.volume2,
             iconColor: VinRColors.gold,
           );
@@ -107,6 +156,8 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
     final primaryTextColor = context.textColor;
     final mutedTextColor = context.textMutedColor;
     final activeGold = context.goldColor;
+
+    final currentQuoteObj = _stoicQuotes[_quoteIndex];
 
     return Scaffold(
       body: AmbientBackground(
@@ -282,7 +333,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Daily Stoic Quote & Audio Reflection
+                // Daily Stoic Quote & Audio Reflection Card
                 const SectionHeader(
                   title: 'DAILY REFLECTION',
                   icon: LucideIcons.quote,
@@ -302,21 +353,31 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                               Text('Daily Stoic Insight', style: TextStyle(fontWeight: FontWeight.bold, color: activeGold, fontSize: 13)),
                             ],
                           ),
-                          IconButton(
-                            icon: Icon(_isPlayingQuoteAudio ? LucideIcons.pause : LucideIcons.volume2, color: activeGold, size: 20),
-                            onPressed: _toggleQuoteAudio,
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: Icon(LucideIcons.refreshCw, color: mutedTextColor, size: 16),
+                                onPressed: _nextQuote,
+                                tooltip: 'Next Quote',
+                              ),
+                              IconButton(
+                                icon: Icon(_isPlayingQuoteAudio ? LucideIcons.pause : LucideIcons.volume2, color: activeGold, size: 20),
+                                onPressed: _toggleQuoteAudio,
+                                tooltip: 'Listen Audio',
+                              ),
+                            ],
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '"$_dailyQuote"',
+                        '"${currentQuoteObj['quote']}"',
                         style: TextStyle(color: primaryTextColor, fontSize: 14, height: 1.45, fontStyle: FontStyle.italic),
                       ),
                       const SizedBox(height: 8),
                       Align(
                         alignment: Alignment.centerRight,
-                        child: Text('— Seneca', style: TextStyle(color: mutedTextColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                        child: Text('— ${currentQuoteObj['author']}', style: TextStyle(color: mutedTextColor, fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
