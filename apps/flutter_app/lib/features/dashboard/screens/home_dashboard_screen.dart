@@ -291,6 +291,14 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                   children: [
                     _buildToolCard(
                       context,
+                      title: '21-Day Growth Plan',
+                      subtitle: 'Habit & mindset roadmap',
+                      icon: LucideIcons.calendar,
+                      color: VinRColors.goldLight,
+                      onTap: () => context.go('/journey'),
+                    ),
+                    _buildToolCard(
+                      context,
                       title: '4-7-8 Breathing',
                       subtitle: 'Calm nervous system',
                       icon: LucideIcons.wind,
@@ -307,8 +315,8 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                     ),
                     _buildToolCard(
                       context,
-                      title: 'Yoga Movement',
-                      subtitle: 'Body alignment flow',
+                      title: 'Functional Mobility',
+                      subtitle: 'Movement & stretch flow',
                       icon: LucideIcons.activity,
                       color: VinRColors.emerald,
                       onTap: () => context.push('/yoga'),
